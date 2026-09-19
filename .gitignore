@@ -1,0 +1,33 @@
+# Local credentials and environment settings
+.env
+.env.*
+!.env.example
+*.tfvars
+*.tfvars.json
+*.pem
+*.key
+# Terraform state, downloaded providers and saved plans
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan
+plan.out
+crash.log
+crash.*.log
+terraform-output*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Development and generated artifacts
+.DS_Store
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+.idea/
+artifacts/
+cache/

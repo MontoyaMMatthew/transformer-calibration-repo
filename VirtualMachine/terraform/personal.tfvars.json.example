@@ -1,0 +1,13 @@
+{
+  "subscription_id": "REDACTED",
+  "project_name": "transformer-calibration",
+  "location": "eastus",
+  "admin_username": "azureuser",
+  "vm_size": "Standard_D2s_v5",
+  "ssh_public_key_path": "~/.ssh/transformer_calibration.pub",
+  "allowed_ssh_source": "REPLACE-WITH-YOUR-PUBLIC-IP/32",
+  "disk_size_gb": 64,
+  "auto_shutdown_time": "2300",
+  "auto_shutdown_timezone": "Mountain Standard Time",
+  "auto_shutdown_enabled": true
+}
