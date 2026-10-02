@@ -6,9 +6,6 @@ resource "azurerm_virtual_network" "main" {
 }
 
 resource "azurerm_subnet" "vm-subnet" {
-  depends_on = [
-    azurerm_virtual_network.main
-  ]
   name                 = "vmSubnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
@@ -16,9 +13,6 @@ resource "azurerm_subnet" "vm-subnet" {
 }
 
 resource "azurerm_public_ip" "main" {
-  lifecycle {
-    create_before_destroy = true
-  }
   name                = "${local.name_prefix}-ip"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name

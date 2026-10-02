@@ -2,20 +2,32 @@
 
 Implement the Azure DSVM workflow defined in [docs/RESOURCE_DEFINITION.md](docs/RESOURCE_DEFINITION.md): develop on a CPU VM, retain the same installation and managed disk, and resize to one A100 for GPU validation and experiments. Thinking mode stays disabled throughout.
 
-Status: the platform decision is documented. The exact DSVM image, subscription quotas, resize compatibility, and actual GPU capacity have not been verified. No infrastructure changes or deployments have been performed as part of these documentation updates.
+Status: Terraform is configured for the pinned Ubuntu 22.04 DSVM image, E8s_v5, a 256 GiB SSD, and South Central US. The image catalog reports Generation 2/x64 and no purchase plan. The repository-local Azure helper is authenticated to the personal subscription. Terraform validation passed and the deployment plan contains 9 additions, no changes, and no deletions. Deployment is blocked by quotas; resize compatibility and actual GPU capacity remain unverified. Follow [README.md](README.md) for commands.
+
+Quota requests submitted September 24, 2026 (Mountain time) for South Central US:
+
+| Quota | Current limit | Requested limit | Last observed status |
+| --- | ---: | ---: | --- |
+| Standard ESv5 Family vCPUs | 0 | 8 | InProgress |
+| Standard NCADS_A100_v4 Family vCPUs | 0 | 24 | InProgress |
+| Total Regional vCPUs | 10 | At least 24 needed | Recheck after family approval |
+
+Request IDs: ESv5 `c4b641d0-6bb1-40ff-878f-c85acfccf712`; A100 `abb5bdd9-fd3a-4ed8-81b6-7782ae62fb51`. View [Azure My quotas](https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade/~/myQuotas), selecting Compute, MatthewPersonalSubscription, and South Central US. Microsoft documents that [family quota approval automatically increases regional quota](https://learn.microsoft.com/en-us/azure/quotas/per-vm-quota-requests); verify the resulting limits before provisioning. Quota approval permits deployment but does not reserve hardware capacity.
 
 ## 1. Establish the personal Azure subscription
 
-- [ ] Create a personal paid subscription and select it for this repository. Do not use Azure for Students.
-- [ ] Prefer Central US; check South Central US if the required image or GPU cannot be allocated. Choose the region before provisioning persistent resources.
-- [ ] Verify CPU quota for `Standard_E8s_v5` and GPU quota for `Standard_NC24ads_A100_v4`. The GPU phase needs 24 available GPU-family vCPUs and 24 available total regional vCPUs.
-- [ ] Request quota increases if needed and separately check GPU availability. CPU allocation does not reserve GPU capacity.
+- [x] Create a personal paid subscription (confirmed by the user).
+- [x] Copy the example to `VirtualMachine/terraform/personal.auto.tfvars.json`, enter the personal subscription ID and SSH settings, and sign in with `./cloud az login`. Confirm the selection with `./cloud az account show`.
+- [x] Select South Central US as the deployment region.
+- [x] Inspect CPU and GPU quotas; both family limits are zero, and the regional limit is 10 vCPUs.
+- [x] Submit increases to 8 ESv5 and 24 NCADS_A100_v4 family vCPUs.
+- [ ] Confirm quota approval and at least 24 total regional vCPUs; separately check GPU availability. CPU allocation does not reserve GPU capacity.
 - [ ] Set a budget and spending alerts that include CPU development, GPU execution, disk storage, networking, and backups. Budget alerts are notifications, not an automatic spending cap.
 
 ## 2. Select and validate the DSVM image
 
-- [ ] Identify an available, supported Ubuntu DSVM image with NVIDIA driver and CUDA support for the A100. Use Generation 2 and x86-64.
-- [ ] Record the exact publisher, offer, SKU, version, Ubuntu release, driver/CUDA versions, and any Marketplace plan requirements or charges. Pin the image version rather than assuming `latest` will remain reproducible.
+- [x] Pin `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`; the regional Azure catalog confirms x64, Generation 2, and no purchase plan.
+- [ ] Recheck image access in the personal subscription and record the installed driver/CUDA versions during the GPU pilot.
 - [ ] Verify that the image and VM security/disk settings permit CPU-to-A100 resizing in the chosen region.
 - [ ] Confirm that a current Qwen3-compatible PyTorch/Transformers environment can run with the supplied driver. Do not assume the image's preinstalled Python packages support Qwen3.
 
@@ -23,13 +35,13 @@ Completion criterion: a concrete image and CPU/GPU configuration are selected. C
 
 ## 3. Update the infrastructure configuration
 
-- [ ] Replace the plain Ubuntu image reference in `VirtualMachine/terraform/linuxvm.tf` with the verified DSVM image and any required Marketplace plan configuration.
-- [ ] Set initial compute to `Standard_E8s_v5` and persistent Standard SSD LRS storage to 256 GiB, or larger if required by the image.
-- [ ] Update configuration descriptions and examples to describe DSVM CPU development and A100 resizing. Keep personal subscription settings in the ignored local configuration file.
-- [ ] Keep key-only SSH access, the restricted source address, and the static public IP. Use an SSH tunnel for notebooks.
-- [ ] Keep daily auto-shutdown, with a documented way to adjust it before long experiments.
+- [x] Replace the plain Ubuntu image reference with the pinned DSVM image. Its metadata requires no purchase plan.
+- [x] Default compute to `Standard_E8s_v5` and persistent Standard SSD LRS storage to 256 GiB.
+- [x] Update examples and add the `cloud` helper with an isolated Azure profile and a shared local subscription configuration.
+- [x] Retain key-only SSH access, the restricted source address, and the static public IP. Use an SSH tunnel for notebooks.
+- [x] Retain daily auto-shutdown and document how to disable it for long experiments.
 - [ ] Check whether any deployment already exists before changing its image or region. Review the Terraform plan for replacement; back up existing work and plan a migration if necessary.
-- [ ] Validate Terraform and review the complete deployment plan, including disk retention and image terms, before provisioning.
+- [x] Validate Terraform and review the complete deployment plan, including disk retention and image terms, before provisioning. Re-run the plan before applying if configuration or Azure state changes.
 
 Completion criterion: the plan describes the intended DSVM and costs, with no unexplained replacement of existing resources.
 

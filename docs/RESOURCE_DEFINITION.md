@@ -14,7 +14,7 @@ Use an **Azure Ubuntu Data Science Virtual Machine (DSVM)** on a **personal paid
 
 The DSVM image must supply a compatible NVIDIA driver and CUDA software stack so that manual driver or CUDA installation is not part of the normal workflow. Manage project-level Python dependencies in a dedicated virtual environment. This is a preconfigured VM, not an Azure Machine Learning managed compute deployment; operating-system maintenance remains the VM owner's responsibility.
 
-Select and pin an available, supported Ubuntu DSVM image version that is compatible with both VM sizes and the chosen PyTorch build. The exact publisher, offer, SKU, version, Ubuntu release, and any Marketplace plan terms must be verified before provisioning. Do not assume the DSVM uses the plain Ubuntu 22.04 image currently specified in Terraform.
+Terraform now pins `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`. Azure's South Central US catalog confirmed this Ubuntu 22.04 image as x64, Generation 2, with no Marketplace purchase plan on September 24, 2026. The new personal subscription's entitlement, CPU/GPU resize path, and PyTorch/driver compatibility still require deployment-time validation.
 
 ## Selected machine configurations
 
@@ -23,7 +23,7 @@ Select and pin an available, supported Ubuntu DSVM image version that is compati
 | CPU development VM | `Standard_E8s_v5`: 8 vCPUs, 64 GiB RAM | Development, data preparation, and short-context CPU smoke tests |
 | GPU experiment VM | `Standard_NC24ads_A100_v4`: one A100 80 GB, 24 vCPUs, 220 GiB RAM | GPU validation and full experiments |
 | Persistent storage | 256 GiB Standard SSD LRS, retained across resizes; increase if the selected image requires more | Operating system, dependencies, model weights, dataset caches, and results |
-| Operating system and image | Supported Generation 2, x86-64 Ubuntu DSVM; exact image version pending verification | Preconfigured GPU software and a persistent Linux environment |
+| Operating system and image | Ubuntu 22.04 DSVM, Generation 2, x64, image version `25.06.18` | Preconfigured GPU software and a persistent Linux environment |
 | Remote access | SSH; optional Jupyter access through an SSH tunnel | Development and experiment management |
 | Separate backup storage | Initially 25-50 GB | Results, configurations, and reproducibility records |
 
@@ -33,11 +33,11 @@ Approximately four billion BF16 parameters occupy about 8 GB before runtime allo
 
 ## Region, quota, and deployment
 
-Prefer **Central US (`centralus`)**, with **South Central US (`southcentralus`)** as a fallback selected before deployment. No price listing for the selected A100 SKU was found in West Central US during the September 24, 2026 review; this is not an authenticated capacity check. Changing regions later is a migration, not an ordinary resize.
+Use **South Central US (`southcentralus`)**, as selected after the regional comparison. Earlier Central US pricing was a catalog listing, not confirmation of availability in the personal subscription. Changing regions later is a migration, not an ordinary resize.
 
 Confirm CPU-family quota for development and at least 24 available vCPUs in both the GPU-family and total regional quotas for the A100 phase. Verify that the exact image, security settings, disk configuration, and both sizes support the resize path. A price listing or quota approval does not guarantee allocation. Running a CPU VM does not reserve an A100 for later use.
 
-The current Terraform scaffold defaults to a CPU-only `Standard_D2s_v5` VM, a 64 GiB disk, and a plain Ubuntu image. Implementation must update the image configuration, initial CPU size, region, and disk capacity. Review Marketplace terms and any required plan block for the chosen image. This document does not itself change or deploy infrastructure. See [NEXT_STEPS.md](../NEXT_STEPS.md) for the implementation checklist.
+Terraform defaults to the pinned DSVM image, `Standard_E8s_v5`, South Central US, and a 256 GiB managed SSD. No Marketplace plan block or separate NVIDIA driver extension is needed for the verified image. The root `cloud` helper uses an ignored repository-local `.azure/` profile and selects the subscription from `VirtualMachine/terraform/personal.auto.tfvars.json`, which Terraform automatically loads. Infrastructure has not yet been deployed. See [NEXT_STEPS.md](../NEXT_STEPS.md) for remaining work.
 
 ### Persistence and resizing
 

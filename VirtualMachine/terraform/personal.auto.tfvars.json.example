@@ -1,0 +1,6 @@
+{
+  "subscription_id": "REPLACE-WITH-YOUR-PERSONAL-SUBSCRIPTION-ID",
+  "allowed_ssh_source": "REPLACE-WITH-YOUR-PUBLIC-IP/32",
+  "ssh_public_key_path": "~/.ssh/transformer_calibration.pub",
+  "vm_size": "Standard_E8s_v5"
+}

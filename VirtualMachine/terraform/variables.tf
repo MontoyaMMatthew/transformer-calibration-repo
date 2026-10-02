@@ -1,10 +1,10 @@
 variable "subscription_id" {
   type        = string
-  description = "Your personal or Azure for Students subscription ID. Set only in an ignored local tfvars file."
+  description = "Personal paid subscription ID, shared with the repository's cloud helper through personal.auto.tfvars.json."
   sensitive   = true
   validation {
     condition     = can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", var.subscription_id))
-    error_message = "Replace REDACTED with your own subscription ID in your local configuration."
+    error_message = "Set your personal subscription ID in personal.auto.tfvars.json."
   }
 }
 variable "project_name" {
@@ -17,8 +17,8 @@ variable "project_name" {
 }
 variable "location" {
   type        = string
-  default     = "eastus"
-  description = "Canonical Azure region name, e.g. eastus or westus2. Resource names use this exact region."
+  default     = "southcentralus"
+  description = "Deployment region. Changing this after deployment replaces resources."
   validation {
     condition     = can(regex("^[a-z]+[a-z0-9]*$", var.location))
     error_message = "Use a canonical Azure location such as eastus, without spaces."
@@ -33,8 +33,21 @@ variable "admin_username" {
 }
 variable "vm_size" {
   type        = string
-  default     = "Standard_D2s_v5"
-  description = "CPU VM starting size; verify availability and quota for your subscription and region."
+  default     = "Standard_E8s_v5"
+  description = "CPU development or A100 experiments; resizing retains the managed OS disk but restarts the VM."
+  validation {
+    condition     = contains(["Standard_E8s_v5", "Standard_NC24ads_A100_v4"], var.vm_size)
+    error_message = "Choose Standard_E8s_v5 for development or Standard_NC24ads_A100_v4 for experiments."
+  }
+}
+variable "dsvm_image_version" {
+  type        = string
+  default     = "25.06.18"
+  description = "Pinned microsoft-dsvm:ubuntu-2204:2204-gen2 version, verified in South Central US. Changing it replaces the VM."
+  validation {
+    condition     = can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+$", var.dsvm_image_version))
+    error_message = "Pin an explicit DSVM image version; do not use latest."
+  }
 }
 variable "ssh_public_key_path" {
   type    = string
@@ -54,10 +67,10 @@ variable "allowed_ssh_source" {
 }
 variable "disk_size_gb" {
   type    = number
-  default = 64
+  default = 256
   validation {
-    condition     = var.disk_size_gb >= 30 && floor(var.disk_size_gb) == var.disk_size_gb
-    error_message = "Choose an integer disk size of at least 30 GiB."
+    condition     = var.disk_size_gb >= 256 && floor(var.disk_size_gb) == var.disk_size_gb
+    error_message = "Choose an integer disk size of at least 256 GiB for the DSVM and research data."
   }
 }
 variable "auto_shutdown_time" {
@@ -72,10 +85,6 @@ variable "auto_shutdown_timezone" {
   type        = string
   default     = "Mountain Standard Time"
   description = "Azure Windows time-zone ID; Mountain Standard Time follows Denver daylight saving."
-}
-variable "auto_shutdown_notification_email" {
-  type    = string
-  default = ""
 }
 variable "auto_shutdown_enabled" {
   type    = bool

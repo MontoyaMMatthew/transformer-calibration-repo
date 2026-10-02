@@ -1,6 +1,5 @@
 locals {
-  auto_shutdown_hhmm   = replace(var.auto_shutdown_time, ":", "")
-  auto_shutdown_notify = var.auto_shutdown_notification_email != ""
+  auto_shutdown_hhmm = replace(var.auto_shutdown_time, ":", "")
 }
 
 resource "azurerm_dev_test_global_vm_shutdown_schedule" "main" {
@@ -12,8 +11,6 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "main" {
   timezone              = var.auto_shutdown_timezone
 
   notification_settings {
-    enabled         = local.auto_shutdown_notify
-    email           = local.auto_shutdown_notify ? var.auto_shutdown_notification_email : null
-    time_in_minutes = 30
+    enabled = false
   }
 }

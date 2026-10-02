@@ -39,11 +39,15 @@ resource "azurerm_linux_virtual_machine" "main" {
   }
 
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts-gen2"
-    version   = "latest"
+    publisher = "microsoft-dsvm"
+    offer     = "ubuntu-2204"
+    sku       = "2204-gen2"
+    version   = var.dsvm_image_version
   }
-  computer_name  = "${var.project_name}-vm"
-  admin_username = var.admin_username
+  # The verified image has no Marketplace purchase plan. Its GPU stack is
+  # preinstalled; do not layer a separate NVIDIA driver extension over it.
+  secure_boot_enabled = false
+  vtpm_enabled        = false
+  computer_name       = "${var.project_name}-vm"
+  admin_username      = var.admin_username
 }

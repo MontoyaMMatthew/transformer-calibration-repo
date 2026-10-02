@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Run Azure CLI or Terraform with this repository's isolated Azure profile."""
+
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+
+ROOT = Path(__file__).resolve().parent
+TF_DIR = ROOT / "VirtualMachine" / "terraform"
+CONFIG = TF_DIR / "personal.auto.tfvars.json"
+
+
+def main():
+    if len(sys.argv) < 3 or sys.argv[1] not in {"az", "terraform"}:
+        print("Usage: ./cloud az <arguments> | ./cloud terraform <arguments>")
+        return 0 if sys.argv[1:] == ["--help"] else 2
+
+    tool, args = sys.argv[1], sys.argv[2:]
+    env = os.environ.copy()
+    env["AZURE_CONFIG_DIR"] = str(ROOT / ".azure")
+    # This workflow deliberately authenticates through the isolated CLI login,
+    # not inherited service-principal, managed-identity, or OIDC credentials.
+    for key in list(env):
+        if key.startswith("ARM_"):
+            del env[key]
+    env.update(ARM_USE_CLI="true", ARM_USE_MSI="false", ARM_USE_OIDC="false")
+
+    local_tf = tool == "terraform" and args[0] in {
+        "init", "fmt", "validate", "version", "providers", "-version", "--version",
+    }
+    login = tool == "az" and args[0] == "login"
+    discovery = tool == "az" and (
+        args[:2] == ["account", "list"] or args[0] in {"version", "--version"}
+    )
+
+    if not (local_tf or login or discovery):
+        try:
+            subscription = json.loads(CONFIG.read_text())["subscription_id"]
+        except (OSError, ValueError, KeyError, TypeError):
+            print(f"Create {CONFIG} from the example and set subscription_id.", file=sys.stderr)
+            return 2
+        if not isinstance(subscription, str) or not re.fullmatch(
+            r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", subscription
+        ):
+            print("Set a valid personal subscription ID in personal.auto.tfvars.json.", file=sys.stderr)
+            return 2
+        result = subprocess.run(
+            ["az", "account", "set", "--subscription", subscription], env=env
+        )
+        if result.returncode:
+            print("Run ./cloud az login to sign in to this repository's Azure profile.", file=sys.stderr)
+            return result.returncode
+        env["ARM_SUBSCRIPTION_ID"] = subscription
+
+    if tool == "terraform":
+        command = ["terraform", f"-chdir={TF_DIR}", *args]
+    else:
+        command = ["az", *args]
+    os.execvpe(command[0], command, env)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except FileNotFoundError as error:
+        print(f"Required command not found: {error.filename}", file=sys.stderr)
+        sys.exit(127)

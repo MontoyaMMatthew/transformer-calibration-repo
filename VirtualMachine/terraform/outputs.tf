@@ -13,7 +13,12 @@ output "resource_group" {
   description = "Resource group holding every resource in this deployment"
 }
 
-output "auto_shutdown" {
-  value       = "Your VM deallocates every day at ${substr(local.auto_shutdown_hhmm, 0, 2)}:${substr(local.auto_shutdown_hhmm, 2, 2)} ${var.auto_shutdown_timezone}${var.auto_shutdown_enabled ? "" : " (currently DISABLED by auto_shutdown_enabled)"}. It never starts itself: before each session run 'az vm start --resource-group ${azurerm_resource_group.main.name} --name ${azurerm_linux_virtual_machine.main.name}'."
-  description = "When the VM shuts itself down, and how to start it again"
+output "vm_name" {
+  value       = azurerm_linux_virtual_machine.main.name
+  description = "VM name for start, deallocate, and status commands"
+}
+
+output "dsvm_image" {
+  value       = "microsoft-dsvm:ubuntu-2204:2204-gen2:${var.dsvm_image_version}"
+  description = "Pinned DSVM image used by this deployment"
 }

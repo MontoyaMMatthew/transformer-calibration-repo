@@ -1,4 +1,5 @@
 # Local credentials and environment settings
+.azure/
 .env
 .env.*
 !.env.example
