@@ -21,6 +21,16 @@ Edit `VirtualMachine/terraform/personal.auto.tfvars.json`:
 - `ssh_public_key_path`: an existing public key path. To create a new key, run `ssh-keygen -t ed25519 -f ~/.ssh/transformer_calibration -C transformer-calibration` without overwriting an existing key.
 - `vm_size`: keep `Standard_E8s_v5` initially.
 
+For another trusted connection, add `additional_ssh_rules` to the same local JSON file. For example (replace the documentation IP with your hotspot's public IP):
+
+```json
+"additional_ssh_rules": {
+  "MattHotSpot": { "source": "203.0.113.10/32", "priority": 1011 }
+}
+```
+
+Keep a comma between JSON fields. Each additional rule permits TCP destination port 22 from that IP, using any source port. Use distinct priorities other than 1001, which belongs to the primary SSH rule. Update this configuration when your IP changes and regenerate the Terraform plan. Portal-only rules can be removed by a later Terraform apply because Terraform manages the security group's rules.
+
 Terraform automatically reads this file. It is ignored by Git. Defaults live in `variables.tf`; add overrides such as `auto_shutdown_enabled` only when needed.
 
 Use the repository's `cloud` helper for both tools:

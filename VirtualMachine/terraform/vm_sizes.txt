@@ -1,0 +1,2 @@
+"vm_size": "Standard_NC24ads_A100_v4"
+"vm_size": "Standard_E8s_v5"

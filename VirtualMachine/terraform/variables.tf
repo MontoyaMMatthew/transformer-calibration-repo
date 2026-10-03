@@ -65,6 +65,25 @@ variable "allowed_ssh_source" {
     error_message = "Provide an IPv4 CIDR with prefix 1-32; unrestricted internet access is not accepted."
   }
 }
+variable "additional_ssh_rules" {
+  type = map(object({
+    source      = string
+    priority    = number
+    description = optional(string, "")
+  }))
+  default     = {}
+  description = "Additional named SSH rules for trusted public IPv4 addresses. Priorities must be unique and different from the primary SSH rule's 1001."
+  validation {
+    condition = alltrue([
+      for name, rule in var.additional_ssh_rules :
+      name != "SSH" && can(cidrnetmask(rule.source)) &&
+      can(regex("/32$", rule.source)) &&
+      rule.priority >= 100 && rule.priority <= 4096 &&
+      floor(rule.priority) == rule.priority && rule.priority != 1001
+    ]) && length(distinct([for rule in values(var.additional_ssh_rules) : rule.priority])) == length(var.additional_ssh_rules)
+    error_message = "Use public IPv4 /32 addresses, names other than SSH, and unique integer priorities from 100 to 4096 excluding 1001."
+  }
+}
 variable "disk_size_gb" {
   type    = number
   default = 256

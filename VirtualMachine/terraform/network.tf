@@ -36,4 +36,19 @@ resource "azurerm_network_security_group" "main" {
     source_address_prefix      = var.allowed_ssh_source
     destination_address_prefix = "*"
   }
+  dynamic "security_rule" {
+    for_each = var.additional_ssh_rules
+    content {
+      name                       = security_rule.key
+      description                = security_rule.value.description
+      priority                   = security_rule.value.priority
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefix      = security_rule.value.source
+      destination_address_prefix = "*"
+    }
+  }
 }
