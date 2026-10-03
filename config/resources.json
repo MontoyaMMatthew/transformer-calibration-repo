@@ -1,0 +1,44 @@
+{
+  "pinned_utc_date": "2026-10-03",
+  "model": {
+    "repo_id": "Qwen/Qwen3-4B",
+    "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c"
+  },
+  "datasets": [
+    {
+      "key": "mmlu_pro",
+      "repo_id": "TIGER-Lab/MMLU-Pro",
+      "revision": "b189ec765aa7ed75c8acfea42df31fdae71f97be",
+      "config": "default",
+      "evaluation_split": "test",
+      "development_split": "validation",
+      "files": {
+        "test": "data/test-*.parquet",
+        "validation": "data/validation-*.parquet"
+      }
+    },
+    {
+      "key": "wikitext",
+      "repo_id": "Salesforce/wikitext",
+      "revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+      "config": "wikitext-103-raw-v1",
+      "distractor_split": "train",
+      "files": {
+        "train": "wikitext-103-raw-v1/train-*.parquet"
+      }
+    },
+    {
+      "key": "arc_challenge",
+      "repo_id": "allenai/ai2_arc",
+      "revision": "210d026faf9955653af8916fad021475a3f00453",
+      "config": "ARC-Challenge",
+      "evaluation_split": "test",
+      "development_split": "validation",
+      "files": {
+        "test": "ARC-Challenge/test-*.parquet",
+        "validation": "ARC-Challenge/validation-*.parquet"
+      }
+    }
+  ]
+}
