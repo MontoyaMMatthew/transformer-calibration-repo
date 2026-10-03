@@ -3,8 +3,11 @@
 Backup destination selected by the owner:
 `/Volumes/X9/projects/transformer-calibration-backups`.
 
-The remote agent can prepare an archive but cannot access the Mac's mounted
-external drive. Step 001 remains open until the copy and checksums below are verified.
+Both manual actions are complete: on October 3, 2026 the owner confirmed the
+live daily shutdown schedule at 11pm MST and the backup copy and verification
+at the directory above. These are owner confirmations, since the remote agent
+cannot access the Mac's mounted external drive. Step 001 is complete. Retain
+the instructions below for reference and future backups.
 
 ## 1. Confirm the live shutdown schedule
 
@@ -41,8 +44,9 @@ It excludes `.env`, authentication state, virtual environments, package caches,
 model weights, and bulk datasets. The pinned resources can initially be
 re-downloaded; an independent weight/data backup is optional.
 
-After verifying, record the backup date and directory in `docs/ENVIRONMENT.md`
-and mark the independent-copy checklist items in `STEP_001.md` complete.
+The owner confirmation date and backup directory are recorded in
+`docs/ENVIRONMENT.md`, and the independent-copy checklist in `STEP_001.md`
+is complete.
 
 ## Later GPU work
 

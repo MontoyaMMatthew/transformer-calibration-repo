@@ -1,6 +1,6 @@
 # Development and experiment environment
 
-Created: October 3, 2026. Status: CPU setup and online/offline inference validated October 3, 2026. Independent Mac backup and live shutdown confirmation remain pending.
+Created: October 3, 2026. Status: Step 001 complete. CPU setup and online/offline inference validated; independent Mac backup and live shutdown schedule confirmed by the owner October 3, 2026.
 
 The Azure VM is already provisioned. Initial development uses `Standard_E8s_v5`. Execute the scoped setup work in [Step 001](next_steps/STEP_001.md). Experiment behavior is defined in [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md); infrastructure details are in [RESOURCE_DEFINITION.md](RESOURCE_DEFINITION.md).
 
@@ -32,8 +32,8 @@ The image and storage below are intended settings from the resource definition, 
 | Transformers version | Stable version supporting Qwen3 | `4.57.6`; Qwen3 imports, tokenizer, FP32 inference passed |
 | Cache location | `<repo>/cache/huggingface` | `/home/azureuser/transformer-calibration-repo/cache/huggingface` on managed OS disk |
 | Artifact location | `<repo>/artifacts` | `/home/azureuser/transformer-calibration-repo/artifacts` on managed OS disk |
-| Shutdown schedule | Inspect current Azure setting | Repository default: enabled, 23:00 Denver. **Live setting unverified**: no Azure CLI login on VM; owner must inspect portal |
-| Independent backup | Directory on the Mac, separate from VM | Selected `/Volumes/X9/projects/transformer-calibration-backups`; transfer/verification pending |
+| Shutdown schedule | Inspect current Azure setting | Owner confirmed daily 23:00, reported as MST, October 3, 2026. Repository time-zone default is Azure `Mountain Standard Time` (Denver); the exact deployed zone ID was not read by the agent |
+| Independent backup | Directory on the Mac, separate from VM | `/Volumes/X9/projects/transformer-calibration-backups`; owner confirmed copy and verification October 3, 2026 |
 | CPU validation date | After Step 001 checks pass | 2026-10-03 UTC; imports, consistency, schema/tokenizer, online/offline FP32 choice scoring passed |
 | GPU validation | Later A100 step | Not performed |
 
@@ -192,6 +192,7 @@ FP32 CPU outputs are development checks, not interchangeable with BF16 GPU study
 | --- | --- | --- |
 | 2026-10-03 | Created environment plan; owner confirmed VM provisioned and E8s_v5 development target | Initial plan, followed by remote validation below |
 | 2026-10-03 | Inspected all bundled environments; verified host and managed storage; isolated Python setup; pinned resources; CPU checks; recreated dependencies | Online/offline CPU scoring passed; all 77 recreated package versions match; independent Mac copy and live shutdown confirmation pending |
+| 2026-10-03 | Owner confirmed live daily shutdown at 11pm MST and independent Mac backup copy/verification | Step 001 complete; A100/CUDA/BF16/32K validation remains deferred |
 
 Append actual setup commands, selected versions, validation evidence, and subsequent environment changes here as work proceeds.
 
@@ -200,8 +201,9 @@ Append actual setup commands, selected versions, validation evidence, and subseq
 The clean checkout initially pointed at `main` (`ded8b25`). The requested
 Step 001 and environment plan existed on `origin/dev` (`2b60f9c`), a descendant
 of main. Setup uses local branch `codex/cpu-environment` based on that revision.
-No commits or pushes are made by this setup task. Source changes are retained
-in the checkout and included in the independent-backup archive.
+The initial setup task left source changes uncommitted and included them in
+the independent-backup archive. The owner subsequently committed and pushed
+the setup to `origin/dev` as `378be6a` (`S001 env,dwnld scripts,inference smoke`).
 
 ### Why the bundled environments are insufficient
 
@@ -284,13 +286,14 @@ choice is recorded for later scoring validation; it does not finalize the
 experiment prompt. FP32 choice log-probabilities use `log_softmax`; NLL is the negative
 gold log-probability. Only answer-position vocabulary logits are materialized.
 
-### Remaining owner actions
+### Owner confirmations and completion
 
 The backup destination is `/Volumes/X9/projects/transformer-calibration-backups`.
-The remote VM cannot access that Mac-mounted volume. Copy the prepared archive,
-verify both archive and member checksums, and confirm the live Azure shutdown
-setting using [the manual instructions](next_steps/STEP_001_MANUAL.md).
-Until those checks are recorded, Step 001 is **not fully complete**.
+The owner confirmed on October 3, 2026 that the backup was copied and verified
+there and the live shutdown schedule was confirmed at 11pm MST. These are owner
+confirmations; the remote agent cannot inspect the Mac-mounted volume and has
+no authenticated Azure CLI account. Step 001 is **complete**. Retain
+[the manual instructions](next_steps/STEP_001_MANUAL.md) for future backups.
 The A100, CUDA execution, BF16, 32K context, and CPU/GPU resize path remain
 explicitly unverified and outside this step.
 
@@ -364,8 +367,14 @@ Report inventory (all ignored under `artifacts/environment/`):
 - `recreation-check.json`, `recreation-install.json`: second environment checks and installation provenance.
 - `torch-install.json`, `dependencies-install.json`, `wheel-manifest.json`: package sources/builds and cached wheel hashes.
 - `validation-summary.json`: final checks and owner-action status.
-- `step-001-setup.tar.gz`, `.sha256`: compact setup backup, locally verified; Mac copy still pending.
+- `step-001-setup.tar.gz`, `.sha256`: compact setup backup, locally verified; owner confirmed Mac copy and verification October 3, 2026.
 
 At the end of setup, the managed filesystem had approximately 143 GiB free
 before packaging (model/data caches, wheels, and both venvs retained). A cached
 resource directory or an on-VM archive is not an independent backup.
+
+The verified backup archive preserves the initial setup records, which still
+describe the owner actions as pending at archive creation. It has not been
+regenerated after verification. The completion confirmations above are the
+current status; they are recorded in source documentation separately from
+that initial snapshot.

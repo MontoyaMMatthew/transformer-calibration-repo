@@ -2,11 +2,11 @@
 
 Created: October 3, 2026.
 
-Status: remote CPU work validated; **step remains open** until the owner verifies the independent Mac backup and current shutdown schedule. See [manual instructions](STEP_001_MANUAL.md).
+Status: **complete October 3, 2026**. Remote CPU validation passed, and the owner confirmed the live shutdown schedule and verified the independent Mac backup. See [manual confirmation and backup instructions](STEP_001_MANUAL.md).
 
 ## Starting point and objective
 
-The Azure VM has been provisioned, as confirmed by the project owner. Initial development will use `Standard_E8s_v5` (8 vCPUs, 64 GiB RAM). CPU environment setup, recreation, resource preparation, and online/offline FP32 validation passed October 3, 2026. The independent Mac backup and live shutdown setting still require owner action.
+The Azure VM has been provisioned, as confirmed by the project owner. Initial development uses `Standard_E8s_v5` (8 vCPUs, 64 GiB RAM). CPU environment setup, recreation, resource preparation, and online/offline FP32 validation passed October 3, 2026. The owner subsequently confirmed daily shutdown at 11pm MST and copied and verified the setup backup on the Mac.
 
 Finish this step with a reproducible Python environment, persistent resource caches, and a small CPU validation result. Follow [ENVIRONMENT.md](../ENVIRONMENT.md) for setup decisions and record actual versions there. The scientific design remains in [EXPERIMENT_PLAN.md](../EXPERIMENT_PLAN.md).
 
@@ -25,7 +25,7 @@ Defer the full experiment CLI, main dataset sampling, distractor sweeps, analysi
 - [x] Connect using the existing SSH configuration and place or locate the repository on persistent storage.
 - [x] Record the checkout path and Git revision, OS, architecture, CPU count, memory, Python interpreters, disk mounts, and free space.
 - [x] Verify the checkout, future `.venv`, caches, and artifacts are on the managed disk, not temporary storage.
-- [ ] Confirm the configured shutdown schedule so downloads and checks can complete.
+- [x] Confirm the configured shutdown schedule so downloads and checks can complete. Owner confirmed 11pm MST on October 3, 2026.
 
 Deliverable: the observed-host section of `docs/ENVIRONMENT.md`, with paths and facts verified on the VM. No deployment or image replacement is needed.
 
@@ -63,7 +63,7 @@ Deliverable: a successful short-context CPU validation. CPU runtime is not an es
 ### 5. Preserve the setup and close the step
 
 - [x] Select and record an independent backup directory on the Mac.
-- [ ] Copy the environment report, resource manifest, and relevant prepared artifacts there and verify the transferred files.
+- [x] Copy the environment report, resource manifest, and relevant prepared artifacts there and verify the transferred files. Owner confirmed the copy and verification at `/Volumes/X9/projects/transformer-calibration-backups` on October 3, 2026.
 - [x] Confirm `.venv`, cache, `.env`, and generated artifacts remain ignored by Git; commit only source scripts, dependency specifications, examples, and documentation when committing is requested.
 - [x] Update `docs/ENVIRONMENT.md` with actual commands, versions, validation date, limitations, and backup location.
 
