@@ -1,8 +1,8 @@
 # Development and experiment environment
 
-Created: October 3, 2026. Status: Step 001 complete. CPU setup and online/offline inference validated; independent Mac backup and live shutdown schedule confirmed by the owner October 3, 2026.
+Created: October 3, 2026. Status: Step 001 CPU setup complete; Step 002 GPU validation complete October 4, 2026. The existing environment passed A100 BF16 scoring across all six context conditions through 32K and forced-interruption recovery. The independent CPU backup is verified; new GPU records are prepared for a separate Mac copy.
 
-The Azure VM is already provisioned. Initial development uses `Standard_E8s_v5`. Execute the scoped setup work in [Step 001](next_steps/STEP_001.md). Experiment behavior is defined in [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md); infrastructure details are in [RESOURCE_DEFINITION.md](RESOURCE_DEFINITION.md).
+The Azure VM is already provisioned. Initial CPU development used `Standard_E8s_v5`; the active VM is now `Standard_NC24ads_A100_v4`. CPU setup is recorded in [Step 001](next_steps/STEP_001.md) and the completed GPU validation in [Step 002](next_steps/STEP_002.md). Experiment behavior is defined in [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md); infrastructure details are in [RESOURCE_DEFINITION.md](RESOURCE_DEFINITION.md).
 
 ## Environment policy
 
@@ -35,7 +35,9 @@ The image and storage below are intended settings from the resource definition, 
 | Shutdown schedule | Inspect current Azure setting | Owner confirmed daily 23:00, reported as MST, October 3, 2026. Repository time-zone default is Azure `Mountain Standard Time` (Denver); the exact deployed zone ID was not read by the agent |
 | Independent backup | Directory on the Mac, separate from VM | `/Volumes/X9/projects/transformer-calibration-backups`; owner confirmed copy and verification October 3, 2026 |
 | CPU validation date | After Step 001 checks pass | 2026-10-03 UTC; imports, consistency, schema/tokenizer, online/offline FP32 choice scoring passed |
-| GPU validation | Later A100 step | Not performed |
+| GPU validation | A100 BF16/native context through 32K | Passed 2026-10-04: two validation questions across all six conditions; forced flash attention and interruption recovery passed |
+| Current VM size | `Standard_NC24ads_A100_v4` | Verified in metadata; 24 CPUs, approximately 216.3 GiB OS-visible RAM, one A100 80 GB PCIe |
+| GPU dependency snapshot | Exact validated package versions | `requirements.gpu-validated.txt`; same 77 distributions as CPU setup |
 
 ## 1. Inspect the host and storage
 
@@ -174,15 +176,15 @@ Select an absolute backup path on the Mac and enter it in the observed-configura
 
 Keep model weights cached on the VM initially and preserve exact revisions for re-download. Re-download depends on upstream availability and is not an independent backup. A self-contained archive of pinned model/dataset snapshots on an external drive or object storage is optional. Exclude Hugging Face authentication files from such archives.
 
-## 7. Later GPU validation
+## 7. GPU validation (completed October 4, 2026)
 
-After the CPU development stage, validate the existing environment on `Standard_NC24ads_A100_v4` before relying on long-context experiments:
+The following checks were completed on `Standard_NC24ads_A100_v4` in Step 002 before relying on long-context experiments:
 
 - Verify actual GPU identity, driver, CUDA availability, and BF16 execution.
 - Verify persistent files survived the resize and cached resources load without another download.
 - Run representative prompts through 32K with the fixed scoring method and memory-efficient attention.
 - Record memory, timings, package changes, and the final attention backend.
-- Create the GPU-validated dependency snapshot only after these checks pass.
+- Create `requirements.gpu-validated.txt` after the checks pass. Completed October 4 with unchanged package versions.
 
 FP32 CPU outputs are development checks, not interchangeable with BF16 GPU study results. Do not silently fall back to CPU when a future experiment configuration requests CUDA.
 
@@ -192,7 +194,8 @@ FP32 CPU outputs are development checks, not interchangeable with BF16 GPU study
 | --- | --- | --- |
 | 2026-10-03 | Created environment plan; owner confirmed VM provisioned and E8s_v5 development target | Initial plan, followed by remote validation below |
 | 2026-10-03 | Inspected all bundled environments; verified host and managed storage; isolated Python setup; pinned resources; CPU checks; recreated dependencies | Online/offline CPU scoring passed; all 77 recreated package versions match; independent Mac copy and live shutdown confirmation pending |
-| 2026-10-03 | Owner confirmed live daily shutdown at 11pm MST and independent Mac backup copy/verification | Step 001 complete; A100/CUDA/BF16/32K validation remains deferred |
+| 2026-10-03 | Owner confirmed live daily shutdown at 11pm MST and independent Mac backup copy/verification | Step 001 complete; GPU checks deferred at that time |
+| 2026-10-04 | Verified A100 allocation and retained disk/cache; ran BF16 context checks and forced-kill recovery | All 12 cases passed through 32K; flash attention in all 36 layers; packages and driver unchanged; new GPU backup copy pending |
 
 Append actual setup commands, selected versions, validation evidence, and subsequent environment changes here as work proceeds.
 
@@ -294,8 +297,9 @@ there and the live shutdown schedule was confirmed at 11pm MST. These are owner
 confirmations; the remote agent cannot inspect the Mac-mounted volume and has
 no authenticated Azure CLI account. Step 001 is **complete**. Retain
 [the manual instructions](next_steps/STEP_001_MANUAL.md) for future backups.
-The A100, CUDA execution, BF16, 32K context, and CPU/GPU resize path remain
-explicitly unverified and outside this step.
+At Step 001 completion, A100/CUDA/BF16/32K and the resize path were still
+unverified. The later Step 002 results below now validate the CPU-to-A100
+resize, retained files, and batch-one BF16 native-context direct scoring path.
 
 ### CPU validation evidence
 
@@ -378,3 +382,103 @@ describe the owner actions as pending at archive creation. It has not been
 regenerated after verification. The completion confirmations above are the
 current status; they are recorded in source documentation separately from
 that initial snapshot.
+
+## A100 validation record (October 4, 2026)
+
+The owner resized the existing VM. `gpu-host.json` confirms
+`Standard_NC24ads_A100_v4`, South Central US, the identical managed OS disk ID,
+and the same pinned DSVM image. The repository, `.venv`, pinned resource
+snapshots/prepared datasets, CPU reports, and verified CPU backup archive all
+survived. `findmnt` confirms repository, venv, Hugging Face cache, and GPU output
+paths use `/dev/sda1` ext4 on the managed OS disk. The GPU size also has a
+64 GiB temporary resource disk; no authoritative project paths were moved there.
+
+`nvidia-smi` confirms NVIDIA A100 80GB PCIe and driver 535.230.02, reporting CUDA
+12.2 support. Project Python remains 3.10.18 and PyTorch remains 2.7.1+cu118
+(CUDA 11.8 runtime), with Transformers 4.57.6 and the same 77 resolved versions.
+Compute capability is 8.0; CUDA and BF16 tensor operations passed. No NVIDIA,
+CUDA, Python, or project dependency changes were required.
+
+The restricted Codex tool shell hides NVIDIA device nodes. GPU checks were run
+with approved direct device access; the ordinary SSH shell can run them normally.
+A restricted-shell `nvidia-smi` failure is not a driver failure on this host.
+
+### Tested inference and recovery
+
+`config/gpu_validation.json` records CUDA BF16, batch size one, thinking
+disabled explicitly, evaluation mode, no gradients, no quantization/sampling,
+no KV caching, no YaRN, and answer-position-only vocabulary logits. Confidence
+and NLL use FP32 choice `log_softmax`. Model/tokenizer and datasets load locally
+with Hugging Face network access disabled, using the same immutable revisions
+as CPU setup.
+
+The validation uses MMLU-Pro validation question `0` and ARC-Challenge validation
+question `Mercury_SC_407695`, with deterministic, paired WikiText train prefixes
+and seed 11. Complete inputs are re-tokenized before inference; the question
+and choices are preserved and each answer completion is one token in its exact
+prefix context. The no-distractor inputs are 131 and 100 tokens. Every nonzero
+condition exactly fills its total budget after reserving one answer token:
+2,047 / 4,095 / 8,191 / 16,383 / 32,767 input tokens. All 12 scoring records
+passed finite-score/NLL and normalized-probability checks.
+
+Every forward forces PyTorch's supported `SDPBackend.FLASH_ATTENTION` with
+model attention set to `sdpa`. A separate 2K profiler pass observed all 36
+flash-attention operators, one per model layer. The separate `flash_attn`
+package was not installed and math fallback was disabled.
+
+At 32K, forwards including choice scoring took 3.373 and 3.379 seconds. Peak
+PyTorch allocated memory was 9.92 GiB, with 11.15 GiB peak reserved. These values
+include resident BF16 weights and exclude GPU driver/context allocations.
+The timing starts after input transfer and includes CUDA synchronization;
+loading, preparation, warm-up, and profiling are excluded. See the full table
+in [Step 002](next_steps/STEP_002.md) and the 12-row `context-summary.csv`.
+
+A separate process was terminated with SIGKILL after two atomically saved and
+flushed records. Resume in a fresh process validated the immutable plan,
+source/package identities, prompt hashes, and prior records; reloaded the cached
+model; skipped two successes; and completed ten pending evaluations. All 12
+unique records are present, with the prior two byte-identical and no duplicates.
+Cached model reload took 1.536 seconds. The one-writer lock and atomic record
+format are implemented for this validation harness; the full experiment runner
+still requires its own implementation and recovery tests.
+
+### Reproduction and records
+
+Activate `.venv` and source `.env` as above. For a fresh run:
+
+```bash
+python scripts/validate_gpu.py --run-dir artifacts/gpu_validation/new-check --recovery-check
+```
+
+Resume a compatible interrupted run with:
+
+```bash
+python scripts/validate_gpu.py --run-dir artifacts/gpu_validation/a100-initial --resume
+```
+
+`requirements.gpu-validated.txt` pins the working GPU environment. Use the same
+Python interpreter, official cu118 PyTorch wheel source, and installation
+procedure documented for the CPU snapshot, substituting the GPU snapshot.
+This dependency snapshot is validated only with the recorded driver/hardware
+and direct-scoring settings. Revalidate relevant changes before experiments.
+
+New ignored records include `artifacts/environment/gpu-host.json` and
+`gpu-preflight.json`, plus `artifacts/gpu_validation/a100-initial/plan.json`,
+`distractor-streams.json`, `report.json`, `attention-check.json`,
+`recovery-check.json`, `context-summary.csv`, and the 12 atomic result records
+under `records/`. The report records software/hardware identities, persistent
+paths, package consistency, inference settings, timings, and peak memory.
+Source hashes identify relevant uncommitted implementation files.
+
+A separate `artifacts/environment/step-002-gpu.tar.gz` with archive/member
+checksums is prepared for `/Volumes/X9/projects/transformer-calibration-backups`.
+Its Mac copy is pending; the owner-verified Step 001 archive is preserved.
+Copy/verification commands are in [Step 002](next_steps/STEP_002.md). Personal
+Terraform settings and Azure authentication are absent from this remote checkout;
+confirm the owner-local `vm_size` matches the active A100 configuration and
+retain the reviewed resize plan in that infrastructure checkout.
+
+This is successful hardware/runtime validation, not the full scientific pilot
+or main experiment. CPU-to-A100 resize was verified; a later return to CPU has
+not yet been performed. Larger batches and KV-cached generation are outside
+the tested direct-scoring configuration.

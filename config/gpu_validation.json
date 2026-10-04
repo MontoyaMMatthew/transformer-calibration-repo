@@ -1,0 +1,18 @@
+{
+  "purpose": "hardware and runtime validation; not study results",
+  "device": "cuda:0",
+  "dtype": "bfloat16",
+  "batch_size": 1,
+  "enable_thinking": false,
+  "quantization": false,
+  "use_cache": false,
+  "logits_to_keep": 1,
+  "attention": "sdpa",
+  "sdpa_backend": "FLASH_ATTENTION",
+  "context_budgets": [0, 2048, 4096, 8192, 16384, 32768],
+  "reserved_answer_tokens": 1,
+  "distractor_seed": 11,
+  "question_split": "validation",
+  "question_row": 0,
+  "question_datasets": ["mmlu_pro", "arc_challenge"]
+}
