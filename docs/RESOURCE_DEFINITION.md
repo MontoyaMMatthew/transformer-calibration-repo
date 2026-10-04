@@ -14,7 +14,7 @@ Use an **Azure Ubuntu Data Science Virtual Machine (DSVM)** on a **personal paid
 
 The DSVM image must supply a compatible NVIDIA driver and CUDA software stack so that manual driver or CUDA installation is not part of the normal workflow. Manage project-level Python dependencies in a dedicated virtual environment. This is a preconfigured VM, not an Azure Machine Learning managed compute deployment; operating-system maintenance remains the VM owner's responsibility.
 
-Terraform now pins `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`. Azure's South Central US catalog confirmed this Ubuntu 22.04 image as x64, Generation 2, with no Marketplace purchase plan on September 24, 2026. The new personal subscription's entitlement, CPU/GPU resize path, and PyTorch/driver compatibility still require deployment-time validation.
+Terraform now pins `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`. Azure's South Central US catalog confirmed this Ubuntu 22.04 image as x64, Generation 2, with no Marketplace purchase plan on September 24, 2026. The existing VM has now run on E8s_v5 and NC24ads_A100_v4 with the same image and managed OS disk. On October 4, 2026, the project environment passed BF16 direct scoring through native 32K context with supported SDPA flash attention. See [ENVIRONMENT.md](ENVIRONMENT.md) for the tested combination and remaining pilot scope.
 
 ## Selected machine configurations
 
@@ -37,7 +37,7 @@ Use **South Central US (`southcentralus`)**, as selected after the regional comp
 
 Confirm CPU-family quota for development and at least 24 available vCPUs in both the GPU-family and total regional quotas for the A100 phase. Verify that the exact image, security settings, disk configuration, and both sizes support the resize path. A price listing or quota approval does not guarantee allocation. Running a CPU VM does not reserve an A100 for later use.
 
-Terraform defaults to the pinned DSVM image, `Standard_E8s_v5`, South Central US, and a 256 GiB managed SSD. No Marketplace plan block or separate NVIDIA driver extension is needed for the verified image. The root `cloud` helper uses an ignored repository-local `.azure/` profile and selects the subscription from `VirtualMachine/terraform/personal.auto.tfvars.json`, which Terraform automatically loads. Infrastructure has not yet been deployed. See [NEXT_STEPS.md](../NEXT_STEPS.md) for remaining work.
+Terraform defaults to the pinned DSVM image, `Standard_E8s_v5`, South Central US, and a 256 GiB managed SSD. No Marketplace plan block or separate NVIDIA driver extension is needed for the verified image. The root `cloud` helper uses an ignored repository-local `.azure/` profile and selects the subscription from `VirtualMachine/terraform/personal.auto.tfvars.json`, which Terraform automatically loads. Infrastructure is deployed; the active size is now NC24ads_A100_v4 after the owner's resize. CPU setup and early batch-one A100 validation are complete. Keep owner-local Terraform overrides synchronized with the active size. See [NEXT_STEPS.md](../NEXT_STEPS.md) for remaining work.
 
 ### Persistence and resizing
 
