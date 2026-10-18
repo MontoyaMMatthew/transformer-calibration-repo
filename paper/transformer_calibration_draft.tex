@@ -1,0 +1,332 @@
+% Standalone Overleaf source. Select pdfLaTeX; no external bibliography or figures required.
+% Draft created October 16, 2026; revised October 17, 2026.
+% Planned procedures are written prospectively.
+% Before submission: complete the scientific pilot, freeze the main protocol,
+% update provisional choices, and add observed results to the abstract.
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array,tabularx}
+\usepackage{cite}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\urlstyle{same}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\Acc}{\operatorname{Acc}}
+\newcommand{\Conf}{\operatorname{Conf}}
+\newcommand{\ECE}{\operatorname{ECE}}
+\newcommand{\NLL}{\operatorname{NLL}}
+\newcommand{\BS}{\operatorname{BS}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,
+  columns=fullflexible,keepspaces=true,frame=single,
+  showstringspaces=false}
+\title{Quantifying Transformer Confidence and Accuracy Trajectories Under Non-Ideal Conditions}
+\author{\IEEEauthorblockN{Matthew M. Montoya}
+\IEEEauthorblockA{Johns Hopkins University\\Engineering for Professionals\\
+\texttt{mmonto16@jh.edu}}}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Language-model confidence can be useful only to the extent that it reflects answer correctness under the conditions in which the model is evaluated. Prior work shows that calibration depends on task formulation, confidence elicitation, and input distribution, while studies of long-context processing demonstrate that additional context does not necessarily improve performance. This study investigates how accuracy and confidence calibration change when progressively longer background text is prepended to otherwise fixed multiple-choice questions. A fixed Qwen3-4B model will be evaluated on MMLU-Pro and ARC-Challenge using WikiText-103 as a source of background intended to be irrelevant. The protocol compares a no-distractor baseline with total context budgets from 2,048 to 32,768 tokens while holding the model, task instructions, answer choices, and scoring procedure fixed. Confidence is defined by the maximum probability obtained from a softmax over valid answer-label logits. Accuracy, expected calibration error, negative log-likelihood, multiclass Brier score, and predictive entropy will characterize the resulting trajectories. Paired question-level bootstrap intervals and repeated distractor realizations will quantify uncertainty. The study tests whether confidence becomes less reliable as distractor context grows, while distinguishing calibration deterioration from changes in accuracy or overall probability quality.
+\end{abstract}
+\begin{IEEEkeywords}
+language models, confidence calibration, long context, irrelevant context, uncertainty estimation
+\end{IEEEkeywords}
+
+\noindent\textit{Draft status, October 17, 2026:} This manuscript develops the research rationale and planned method. Main-study results are pending. Sample counts and pilot-dependent choices remain provisional; the abstract will be updated with measured findings after evaluation.
+
+\section{Introduction}
+Transformer language models are commonly evaluated by whether they produce correct answers, but answer accuracy alone does not establish whether their confidence is trustworthy. A model that assigns high confidence to an incorrect prediction can make an error difficult to recognize, whereas a model whose confidence reflects its likelihood of correctness supplies an additional signal for interpreting its predictions. Confidence calibration concerns the relationship between predicted probabilities and observed correctness across examples. Modern neural networks can produce overconfident predictions, motivating methods for evaluating and adjusting their probabilities~\cite{guo2017}.
+
+Evidence for Transformer language models is more conditional than a general claim that their confidence is always unreliable. Desai and Durrett found strong in-domain calibration for pretrained BERT and RoBERTa models on classification tasks~\cite{desai2020}. Kadavath et al. showed that larger language models can exhibit useful calibration on carefully formatted multiple-choice tasks~\cite{kadavath2022}. In contrast, Jiang et al. identified substantial miscalibration in generative question answering~\cite{jiang2021}. These findings motivate specifying the model, task, confidence signal, and evaluation distribution whenever confidence reliability is discussed.
+
+Input context is one condition under which reliability may change. A large available context window does not guarantee effective use of its contents. Liu et al. demonstrated sensitivity to the position of relevant information in long-context retrieval and question answering~\cite{liu2024}. Shi et al. showed that irrelevant information can reduce language-model problem-solving accuracy~\cite{shi2023}. Such results establish a motivation for studying distraction, but a decline in accuracy does not by itself reveal whether confidence becomes less calibrated. Confidence could fall in proportion to accuracy, remain elevated, or change in a way that improves calibration.
+
+This project therefore examines accuracy and confidence together under a controlled background-prefix intervention. A fixed Qwen3-4B checkpoint will answer the same multiple-choice questions under increasing total context budgets. The model will receive progressively longer WikiText background before each question, with thinking disabled and confidence computed directly from answer-label logits. This configuration permits comparisons without adding model training, changing the answer set, or relying on generated numerical self-reports.
+
+The intended contribution is a reproducible empirical characterization of accuracy, top-label calibration, and full-choice probability quality across paired context conditions on two benchmarks. Repeated distractor realizations and question-level uncertainty estimates will help distinguish persistent changes from variation due to sampled questions or background text. The conclusions will concern this model and evaluation protocol; broader claims about Transformer architectures or all forms of distribution shift will require additional experiments.
+
+\section{Related Work}
+\subsection{Calibration and Uncertainty Under Changing Inputs}
+Guo et al. studied miscalibration in modern neural networks and showed that temperature scaling can improve confidence estimates in their evaluated settings~\cite{guo2017}. Their work motivates reliability diagrams and expected calibration error (ECE), which compare confidence with empirical correctness. Calibration also admits different definitions: calibration of the predicted class's confidence is weaker than calibration of the complete multiclass probability vector~\cite{vaicenavicius2019}. Accordingly, the present study treats top-label ECE as one perspective on reliability and also reports scores based on all answer-choice probabilities.
+
+Ovadia et al. evaluated predictive uncertainty under dataset shift, demonstrating that uncertainty quality measured under one distribution need not persist as evaluation inputs change~\cite{ovadia2019}. That result motivates measuring accuracy and probability quality together. The intervention here is narrower: benchmark questions and gold answers remain fixed while additional background changes the prompt. Since the full pretraining distribution is unknown, the study does not establish that WikiText is outside the model's training distribution.
+
+\subsection{Confidence in Transformer Question Answering}
+Desai and Durrett examined BERT and RoBERTa across classification tasks and in-domain and out-of-domain settings~\cite{desai2020}. Their findings support a conditional view of calibration, but do not directly establish the behavior of an instruction-tuned causal model scored through answer-label tokens. Jiang et al. studied calibration in generative question answering and explored methods for improving it~\cite{jiang2021}. Their open-ended setting differs from the fixed answer sets used here.
+
+Kadavath et al. investigated multiple-choice answer probabilities and self-evaluation signals, including whether a proposed answer is true and whether the model knows an answer~\cite{kadavath2022}. These signals address related questions but are not interchangeable. This project restricts confidence to the model's normalized probabilities over valid answer labels at a fixed scoring position. It does not ask the model to generate a percentage confidence or to judge a separately generated response.
+
+\subsection{Irrelevant Context and Long-Context Utilization}
+Liu et al. evaluated retrieval and question answering while varying context size and the position of relevant information~\cite{liu2024}. Their findings motivate controlling prompt placement and distinguishing nominal context capacity from effective use. In this project, the question remains after the background; evidence location is not independently manipulated.
+
+Shi et al. introduced GSM-IC to examine how irrelevant information affects arithmetic problem solving~\cite{shi2023}. Their study provides direct evidence of distractibility, whereas the present protocol examines increasingly long natural-text prefixes and measures calibration alongside accuracy on multiple-choice benchmarks.
+
+Chhikara studied confidence calibration under free-generation and distractor-augmented question-answering formats~\cite{chhikara2025}. In that work, distractors are plausible incorrect answer options, and confidence is elicited through numerical self-reports. Here, the answer options remain fixed and the manipulated material is a background passage; confidence is extracted from answer-label logits. The research therefore extends the evaluation of confidence under contextual changes through a specific paired length sweep, rather than claiming that the connection between distractors and calibration is unexplored.
+
+\section{Research Project Problem}
+\subsection{Research Questions and Scope}
+The central research question is: \textit{How do answer accuracy and answer-choice confidence calibration change when progressively longer WikiText background is prepended to otherwise fixed multiple-choice questions for Qwen3-4B?} Three questions guide the analysis:
+\begin{enumerate}
+\item How do accuracy and mean confidence vary across context conditions?
+\item Does top-label calibration deteriorate between the no-distractor baseline and the largest context condition, and what pattern appears at intermediate lengths?
+\item Do probability-quality measures and a second benchmark provide supporting or conflicting evidence?
+\end{enumerate}
+The independent variable is nominal total context budget. Outcomes include accuracy, maximum answer-choice probability, ECE, negative log-likelihood (NLL), Brier score, and predictive entropy. A unique question is the sampling unit; observations across lengths and distractor realizations are repeated measurements of that question.
+
+\subsection{Hypothesis and Primary Comparison}
+The hypothesis is that confidence becomes less reliable as irrelevant background grows. Its primary operational comparison is
+\begin{equation}
+\Delta_{\ECE} = \frac{1}{S}\sum_{s=1}^{S}\ECE_{32\mathrm{K},s}-\ECE_{0},
+\label{eq:primary}
+\end{equation}
+where $S=3$ distractor realizations and $\ECE_0$ is the baseline value computed once on the same questions. MMLU-Pro supplies the primary analysis; ARC-Challenge supplies a secondary check across benchmarks. Values above zero indicate greater measured ECE at 32K. A paired 95\% interval entirely above zero would support deterioration for that endpoint comparison, subject to the limitations of ECE estimation. Intervals spanning zero will be interpreted as inconclusive for the direction of that comparison.
+
+The intermediate conditions characterize the trajectory. Equation~\eqref{eq:primary} does not assert that deterioration is monotonic. Accuracy loss without increasing calibration error will be reported as a different outcome from worsening calibration. Likewise, increasing NLL or Brier score indicates poorer probability quality, which cannot be attributed exclusively to calibration. Mixed or null findings remain informative outcomes of the study.
+
+\section{Method}
+\subsection{Experimental Design and Model}
+The study will use a repeated-measures, inference-only design with the same evaluation questions at every context condition. The selected checkpoint is \texttt{Qwen/Qwen3-4B}, a causal language model with pretraining and post-training~\cite{qwen2025}. The model card documents a native 32,768-token context and an explicit switch for disabling thinking~\cite{qwencard}. No additional training, fine-tuning, quantization, fitted temperature scaling, or context extension will be applied.
+
+Model weights will use BF16, while answer-choice softmax and log-softmax will use FP32. Execution will use evaluation mode, disabled gradient tracking, no key/value caching, and PyTorch scaled dot-product attention with its flash-attention backend. Vocabulary logits will be computed only for the answer position. The development validation harness has exercised this configuration at batch size one. The scientific pilot will assess larger batches with a conservative memory margin before freezing the main execution policy. Table~\ref{tab:design} summarizes the planned design.
+
+\begin{table}[t]
+\caption{Planned experimental design. Sample counts are provisional until the pilot is complete.}
+\label{tab:design}
+\centering\small
+\begin{tabularx}{\columnwidth}{@{}p{0.30\columnwidth}Y@{}}
+\toprule
+Factor & Planned setting \\
+\midrule
+Model & Qwen3-4B, fixed checkpoint \\
+Primary evaluation & 1,000 MMLU-Pro test questions \\
+Secondary evaluation & 500 ARC-Challenge test questions \\
+Background corpus & WikiText-103 raw, training split \\
+Context conditions & No distractor; 2K, 4K, 8K, 16K, 32K total budgets \\
+Distractor seeds & 11, 22, 33 \\
+Selection seed & 42 \\
+Prompting & Zero-shot; background before question \\
+Answer scoring & Valid answer-label logits; FP32 normalization \\
+Primary contrast & 32K minus baseline ECE on MMLU-Pro \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Datasets and Question Selection}
+MMLU-Pro will serve as the primary evaluation dataset~\cite{wang2024}. Its questions cover multiple subjects and emphasize challenging knowledge and reasoning, with expanded answer sets relative to MMLU. ARC-Challenge will provide a secondary evaluation on grade-school science questions~\cite{clark2018}. WikiText-103 will supply natural expository background~\cite{merity2016}. Exact model, tokenizer, and dataset revisions are provided in Appendix~\ref{app:resources}.
+
+Eligibility will be determined before sampling: the fully rendered question, choices, instructions, and reserved answer space must fit the smallest nonzero budget of 2,048 tokens. Questions that do not fit will be excluded from the entire paired sweep, and exclusion counts will be reported. No question or answer choice will be silently truncated. Actual choice counts and gold-answer mappings will be validated. Choices will retain dataset order and receive consecutive letter labels beginning with A; ARC's original label format will be mapped to the corresponding choice index before relabeling.
+
+The provisional main sample is 1,000 eligible MMLU-Pro test questions, sampled without replacement using proportional subject stratification, and 500 eligible ARC-Challenge test questions, sampled uniformly without replacement. For MMLU-Pro, subject allocations will be the floors of proportional counts, with remaining places assigned by descending fractional remainder and subject-name order resolving ties. Question IDs will be sorted before seeded selection. Seed 42 will control question selection, separately from distractor sampling. Final sample counts will be fixed after the pilot and before main inference, using measured feasibility and the precision needed to interpret the primary comparison.
+
+Approximately 20 validation questions from each benchmark will be used for the scientific pilot, with pilot IDs disjoint from the main test sample. The protocol deliberately uses direct answering with thinking disabled. Since MMLU-Pro reports benefits from chain-of-thought prompting~\cite{wang2024}, resulting accuracy will be interpreted under this protocol rather than compared directly with scores from a different prompting regime. Benchmark results will be reported separately.
+
+\subsection{Distractor Construction and Pairing}
+Background will be drawn from the \texttt{wikitext-103-raw-v1} training split. The proposed construction follows the validation harness: sample nonempty rows uniformly with replacement, retain their text including nonempty headings, and concatenate rows using newline separators. This rule can produce fragments and article boundaries; it defines the background distribution being tested rather than a coherent-document retrieval task. The pilot will inspect this construction, and any changes will be documented before the main protocol is frozen.
+
+For each dataset, question ID, and distractor seed, a stable cryptographic digest will initialize an independent pseudorandom stream. Enough text will be sampled to fill the largest context budget. Successively longer prefixes of this same stream will supply the nonzero conditions. The three seeds, 11, 22, and 33, therefore change background material rather than model parameters, question selection, or answer generation. The no-distractor baseline will be evaluated once per question and reused in paired contrasts.
+
+Source row IDs, their order, selected endpoints, and text hashes will be retained for exact reconstruction. Corpus sampling alone cannot guarantee semantic irrelevance: a passage may accidentally overlap with a question. Pilot inspection will characterize such cases and determine whether source-based screening is necessary. Any screening rule will be fixed before main inference and will not use observed model performance. Background will consequently be described as intended to be irrelevant rather than verified to be unrelated in every instance.
+
+\subsection{Prompt Construction and Context Accounting}
+Every evaluation will use the pinned tokenizer's chat template with \texttt{enable\_thinking=False} and an assistant answer prefix. The user message contains fixed instructions, the background, the question, and the labeled choices. Appendix~\ref{app:prompt} gives the proposed message template and scoring suffix. The same headings and formatting will remain in the baseline, with an empty background field. The neutral heading ``Background text:'' will be used consistently across conditions so that the prompt does not explicitly identify the material as irrelevant or instruct the model to ignore it. This wording differs from the earlier runtime-validation prompt and will be revalidated during the pilot.
+
+The label 0K denotes no distractor, not a zero-token input. Nonzero labels denote total budgets $L\in\{2048,4096,8192,16384,32768\}$. For assembled input $x$, the constraint is
+\begin{equation}
+T(x)+1\leq L,
+\end{equation}
+where $T(x)$ includes the instructions, background, question, choices, answer prefix, and all chat-template tokens. One token is reserved for the answer, even though direct scoring does not append a generated answer. The question and choices remain intact. Background endpoints will be adjusted after tokenizing the complete assembled prompt, since counts from separately tokenized pieces need not add exactly at boundaries. Actual input counts, background counts, and target shortfalls will be recorded.
+
+The question always follows the background. Increasing background therefore changes both input content and absolute question position, and increases the distance between the initial instruction and the answer position. The protocol estimates the effect of this specified prefix intervention; it does not independently identify the effects of content, position, and token count.
+
+\subsection{Answer Scoring and Confidence Extraction}
+Let $i$ index questions, $\ell$ index context conditions, $s$ index distractor realizations, and $K_i$ be the number of valid choices. Let $z_{i\ell sk}$ be the next-token logit associated with answer label $k$ at the fixed answer position. Define
+\begin{equation}
+p_{i\ell sk}=\frac{\exp(z_{i\ell sk})}{\sum_{j=1}^{K_i}\exp(z_{i\ell sj})},
+\label{eq:prob}
+\end{equation}
+\begin{equation}
+\hat y_{i\ell s}=\arg\max_k p_{i\ell sk},\qquad
+c_{i\ell s}=\max_k p_{i\ell sk}.
+\end{equation}
+Ties will be resolved by the first label in saved choice order. Equation~\eqref{eq:prob} will be implemented using stable FP32 log-softmax, preserving log-probabilities for NLL computation.
+
+Each label completion includes a leading space after \texttt{Answer:}. The tokenizer must encode the completed prompt as the unchanged prompt token sequence followed by exactly one distinct label token. This condition will be checked on the actual assembled prompts. If it fails, the label format will be revised and revalidated during the pilot; the one-token scoring protocol will not silently substitute an incomplete sequence score.
+
+These probabilities are normalized over valid answer labels, conditional on the supplied choices and prompt format. They are not probabilities over the entire vocabulary or of a generated explanation. No answers will be sampled, and no generation temperature, top-$k$, or top-$p$ transformation will be applied. The experiment evaluates this operational confidence signal rather than an unrestricted measure of the model's knowledge.
+
+\subsection{Evaluation Metrics}
+For a fixed dataset, condition, and realization, suppress $\ell,s$ and let $n$ be the number of questions, $y_i$ the correct choice, and $a_i=\ind[\hat y_i=y_i]$. Accuracy and mean confidence are
+\begin{equation}
+\Acc=\frac{1}{n}\sum_i a_i,\qquad
+\Conf=\frac{1}{n}\sum_i c_i.
+\end{equation}
+Top-label calibration concerns whether $\Pr(\hat y=Y\mid C=c)=c$ for confidence values in the distribution's support. ECE approximates departures from this relationship using bins~\cite{guo2017}. With bin index sets $I_b$,
+\begin{equation}
+\ECE=\sum_{b=1}^{B}\frac{|I_b|}{n}
+\left|\Acc(I_b)-\Conf(I_b)\right|.
+\end{equation}
+Primary ECE will use $B=10$ equal-width bins: $[(b-1)/B,b/B)$ for $b=1,\ldots,B-1$, and $[(B-1)/B,1]$ for the final bin. Empty bins contribute zero. Bin counts, accuracy, and mean confidence will be saved. Analyses with 15 and 20 bins will assess sensitivity to binning. ECE estimates binned top-label calibration, not calibration of the complete output distribution~\cite{vaicenavicius2019}.
+
+Full-choice probability quality will be evaluated with
+\begin{equation}
+\NLL=-\frac{1}{n}\sum_i\log p_{i,y_i},
+\end{equation}
+\begin{equation}
+\BS=\frac{1}{n}\sum_i\sum_{k=1}^{K_i}
+\left(p_{ik}-\ind[y_i=k]\right)^2.
+\end{equation}
+Natural logarithms give NLL in nats. With one gold answer and no label smoothing or weighting, categorical cross-entropy equals NLL, so it will be reported once as ``Cross-entropy (NLL).'' This is loss over answer choices, not language-model loss over the prompt. The Brier score sums over classes and averages over questions without division by $K_i$. Both scores reflect probability quality beyond calibration alone.
+
+Predictive entropy will be calculated as
+\begin{equation}
+H_i=-\sum_{k=1}^{K_i}p_{ik}\log p_{ik},\qquad
+H_i^{\mathrm{norm}}=H_i/\log K_i.
+\end{equation}
+Mean raw and normalized entropy will describe uncertainty. Mean confidence and entropy have no universally preferred direction: their interpretation depends on whether uncertainty tracks correctness. The signed gap $\Conf-\Acc$ will describe aggregate overconfidence or underconfidence, with the qualification that errors can cancel. Additional diagnostics will include confidence on incorrect predictions, prediction changes from baseline, and transitions between correct and incorrect answers. Confidence on errors will be reported as undefined if no errors occur, alongside its denominator.
+
+\subsection{Aggregation and Statistical Analysis}
+Metrics will first be computed separately for each dataset, context condition, and distractor seed. Nonzero-condition summaries will average the three seed-specific metric values, with individual seed values also retained. Probability vectors will not be averaged before scoring: doing so would evaluate an ensemble across background realizations. The baseline is one result per question, not three independent observations.
+
+Uncertainty intervals will use 2,000 question-level bootstrap resamples with replacement and fixed analysis seed 2026. Resampling will preserve the observed MMLU-Pro subject allocations; ARC questions will be resampled without subject strata. Every sampled question will retain all its context and seed measurements. All metrics, including the nonlinear ECE statistic and the primary contrast in~\eqref{eq:primary}, will be recomputed within each resample. Two-sided percentile 95\% intervals will use the 2.5th and 97.5th percentiles. Identical resampled question IDs will be used for paired baseline differences.
+
+These intervals describe question-sampling uncertainty conditional on the chosen distractor streams and eligible population. Variation across the three seeds will be reported separately; three realizations provide limited coverage of the wider background distribution. MMLU-Pro's endpoint comparison is primary. ARC comparisons, intermediate conditions, metric sensitivity checks, and diagnostics are secondary or exploratory and will not be presented as independent confirmatory discoveries without a separately specified multiplicity policy.
+
+Planned outputs include one summary table per dataset with accuracy, confidence, NLL, ECE, Brier score, entropy, sample counts, and uncertainty intervals. Figures will show accuracy and confidence trajectories; separate ECE, NLL, and Brier trajectories; reliability diagrams with bin counts at 0K, 8K, and 32K; and paired changes from baseline.
+
+\subsection{Pilot, Completeness, and Reproducibility}
+Development runtime checks have exercised two validation questions across all six conditions, including native 32K inference and interrupted-run recovery. Those checks are not a scientific sample or evidence for the hypothesis. A separate pilot will cover approximately 20 validation questions per dataset across all lengths and all distractor seeds. It will check label tokenization, prompt reconstruction, background construction, token budgets, memory, runtime by length, and recovery. Timing at 32K will be measured directly rather than extrapolated from short prompts.
+
+Batch-size checks will begin at one and assess larger candidates incrementally, initially two and four, without deliberately searching for an out-of-memory limit. The initial acceptance target is at least 25\% of device memory remaining free at the observed peak, accounting for allocator reservation and other device usage rather than model tensors alone. A larger candidate will be attempted only when conservative estimates from preceding measurements indicate that this margin can be retained. Candidate settings will be checked with repeated 32K inputs from both benchmarks, and throughput will be measured as completed questions per unit time. Batched answer probabilities, predictions, padding masks, and answer-position extraction will be checked against single-example scoring on the same inputs. The final batch size will prioritize stable operation and useful throughput over maximum occupancy and will be fixed before main inference. Observed headroom reduces memory risk but cannot guarantee that every future allocation will succeed.
+
+Before main inference, the study will freeze sample IDs, final sample counts, prompt text, screening rules, distractor construction, model settings, and analysis conventions. At the provisional counts, the main workload is
+\begin{equation}
+(1000+500)\left(1+5\times3\right)=24{,}000
+\end{equation}
+forward passes, excluding pilot and development checks. The shared baseline accounts for one evaluation per question.
+
+The validated environment uses an NVIDIA A100 80\,GB GPU, Python 3.10.18, PyTorch 2.7.1 with its CUDA 11.8 runtime, and Transformers 4.57.6. The final run manifest will record the actual hardware, software, code revision, resource revisions, and settings used. Per-example records will retain question IDs, gold answers, predictions, logits, log-probabilities, probabilities, token counts, background reconstruction metadata, and run identifiers. Numerical checks will verify finite logits and log-probabilities and normalized probabilities.
+
+Successful records will be persisted before an evaluation is marked complete. Transient execution failures will receive at most two retries of the same saved input, with all attempts recorded; scientific settings will not be changed silently to resolve a failure. Any persistent failures will be reported. Primary paired analysis will use questions with complete coverage across the planned conditions and seeds, with exclusions and subject composition disclosed. If complete-question exclusions undermine the planned sample or precision, the run will be reported as incomplete rather than treated as equivalent to the frozen design. Final analyses will be regenerated from saved records, and research artifacts will be backed up independently of the compute machine.
+
+\subsection{Interpretive Limits}
+The study evaluates one model, one confidence-extraction rule, one background corpus, and one placement configuration. It does not establish that results extend to open-ended generation, reasoning-enabled inference, other checkpoints, or all long-context tasks. Background may sometimes provide useful information, answer-label probabilities may reflect formatting or label preferences, and the benchmarks may overlap with unknown pretraining material. Fixed choice order controls a factor across conditions but does not eliminate answer-position bias. ECE depends on binning and finite samples, while repeated background seeds represent only a small subset of possible contexts. Conclusions will be stated in terms of the measured intervention and supported metrics.
+
+\appendices
+\section{Proposed Prompt and Scoring Suffix}
+\label{app:prompt}
+The following user message adapts the validation harness by replacing its earlier relevance-signaling heading with ``Background text:''. Bracketed fields are replaced with the sampled background, question, and all choices in original order. The first instruction is a single line before chat-template rendering.
+\begin{lstlisting}
+Answer the multiple-choice question using only its choice letter.
+
+Background text:
+[background text; empty for baseline]
+
+Question:
+[question text]
+A. [first choice]
+B. [second choice]
+[remaining labeled choices]
+\end{lstlisting}
+The user message is passed to the pinned tokenizer's \texttt{apply\_chat\_template} with \texttt{tokenize=False}, \texttt{add\_generation\_prompt=True}, and \texttt{enable\_thinking=False}. The literal string \texttt{Answer:} is appended to the returned text. The resulting assistant suffix is checked for an empty \texttt{<think>} block followed by that prefix; the exact rendered text and token sequence are preserved through the saved plan and resource pins. Each scored completion is a leading space followed by one label, for example \texttt{ A}. Actual prompts will contain no bracketed explanatory fields.
+
+\section{Pinned Resources}
+\label{app:resources}
+The following immutable revisions are recorded in the project configuration. The model and tokenizer share one revision. Long identifiers are printed separately to preserve legibility.
+\begin{description}
+\item[Model/tokenizer:] \texttt{Qwen/Qwen3-4B}.\\
+\path{1cfa9a7208912126459214e8b04321603b3df60c}
+\item[Primary questions:] \texttt{TIGER-Lab/MMLU-Pro}, default configuration; test for main evaluation, validation for development/pilot.\\
+\path{b189ec765aa7ed75c8acfea42df31fdae71f97be}
+\item[Background:] \texttt{Salesforce/wikitext}, \texttt{wikitext-103-raw-v1}, training split.\\
+\path{b08601e04326c79dfdd32d625aee71d232d685c3}
+\item[Secondary questions:] \texttt{allenai/ai2\_arc}, \texttt{ARC-Challenge}; test for main evaluation, validation for development/pilot.\\
+\path{210d026faf9955653af8916fad021475a3f00453}
+\end{description}
+
+% Inline bibliography makes this .tex file self-contained for Overleaf.
+\begin{thebibliography}{14}
+\bibitem{guo2017}
+C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger,
+``On calibration of modern neural networks,'' in \emph{Proc. ICML},
+vol. 70, pp. 1321--1330, 2017.
+\url{https://proceedings.mlr.press/v70/guo17a.html}
+
+\bibitem{desai2020}
+S. Desai and G. Durrett, ``Calibration of pre-trained transformers,''
+in \emph{Proc. EMNLP}, pp. 295--302, 2020.
+\url{https://aclanthology.org/2020.emnlp-main.21/}
+
+\bibitem{kadavath2022}
+S. Kadavath et al., ``Language models (mostly) know what they know,''
+\emph{arXiv:2207.05221}, 2022.
+\url{https://arxiv.org/abs/2207.05221}
+
+\bibitem{jiang2021}
+Z. Jiang, J. Araki, H. Ding, and G. Neubig,
+``How can we know when language models know? On the calibration of language models for question answering,''
+\emph{Trans. Assoc. Comput. Linguistics}, vol. 9, pp. 962--977, 2021.
+\url{https://aclanthology.org/2021.tacl-1.57/}
+
+\bibitem{liu2024}
+N. F. Liu, K. Lin, J. Hewitt, A. Paranjape, M. Bevilacqua, F. Petroni,
+and P. Liang, ``Lost in the middle: How language models use long contexts,''
+\emph{Trans. Assoc. Comput. Linguistics}, vol. 12, pp. 157--173, 2024.
+\url{https://aclanthology.org/2024.tacl-1.9/}
+
+\bibitem{shi2023}
+F. Shi, X. Chen, K. Misra, N. Scales, D. Dohan, E. H. Chi,
+N. Sch\"arli, and D. Zhou,
+``Large language models can be easily distracted by irrelevant context,''
+in \emph{Proc. ICML}, vol. 202, pp. 31210--31227, 2023.
+\url{https://proceedings.mlr.press/v202/shi23a.html}
+
+\bibitem{vaicenavicius2019}
+J. Vaicenavicius, D. Widmann, C. Andersson, F. Lindsten, J. Roll,
+and T. Sch\"on, ``Evaluating model calibration in classification,''
+in \emph{Proc. AISTATS}, vol. 89, pp. 3459--3467, 2019.
+\url{https://proceedings.mlr.press/v89/vaicenavicius19a.html}
+
+\bibitem{ovadia2019}
+Y. Ovadia et al., ``Can you trust your model's uncertainty?
+Evaluating predictive uncertainty under dataset shift,''
+in \emph{Advances in Neural Information Processing Systems}, vol. 32, 2019.
+\url{https://arxiv.org/abs/1906.02530}
+
+\bibitem{chhikara2025}
+P. Chhikara, ``Mind the confidence gap: Overconfidence, calibration,
+and distractor effects in large language models,''
+\emph{Transactions on Machine Learning Research}, 2025.
+\url{https://arxiv.org/abs/2502.11028v3}
+
+\bibitem{qwen2025}
+Qwen Team, ``Qwen3 technical report,'' \emph{arXiv:2505.09388}, 2025.
+\url{https://arxiv.org/abs/2505.09388}
+
+\bibitem{qwencard}
+Qwen Team, ``Qwen3-4B model card,'' Hugging Face, pinned revision
+\texttt{1cfa9a7}, accessed Oct. 16, 2026.
+\url{https://huggingface.co/Qwen/Qwen3-4B/blob/1cfa9a7208912126459214e8b04321603b3df60c/README.md}
+
+\bibitem{wang2024}
+Y. Wang et al., ``MMLU-Pro: A more robust and challenging multi-task
+language understanding benchmark,'' \emph{Advances in Neural Information
+Processing Systems}, vol. 37, pp. 95266--95290, 2024.
+\url{https://arxiv.org/abs/2406.01574}
+
+\bibitem{clark2018}
+P. Clark, I. Cowhey, O. Etzioni, T. Khot, A. Sabharwal,
+C. Schoenick, and O. Tafjord,
+``Think you have solved question answering? Try ARC, the AI2 reasoning challenge,''
+\emph{arXiv:1803.05457}, 2018.
+\url{https://arxiv.org/abs/1803.05457}
+
+\bibitem{merity2016}
+S. Merity, C. Xiong, J. Bradbury, and R. Socher,
+``Pointer sentinel mixture models,'' \emph{arXiv:1609.07843}, 2016.
+\url{https://arxiv.org/abs/1609.07843}
+\end{thebibliography}
+\end{document}

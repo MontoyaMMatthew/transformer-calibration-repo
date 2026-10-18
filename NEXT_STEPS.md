@@ -80,6 +80,8 @@ Completion criterion: the full context range works on the intended A100 with the
 
 ## 7. Run experiments and control spending
 
+- [ ] Use the accepted `Background text:` prompt heading for the scientific pilot and main study; revalidate token budgets and label scoring. Preserve earlier runtime-validation records with their original wording.
+- [ ] During the pilot, assess batches 1, 2, and 4 with repeated 32K examples from both datasets. Retain at least 25% observed device-memory headroom, avoid a deliberate out-of-memory search, and verify scoring against batch one. See `docs/EXPERIMENT_PLAN.md` for the conservative screening policy. Do not start GPU work until the owner initiates the pilot.
 - [ ] Finalize sample sizes, subject sampling, distractor repetitions and placement, metric conventions, and uncertainty estimates.
 - [ ] Use pilot throughput to revise the provisional 100-GPU-hour allocation and budget. Include paid GPU time spent loading models and debugging.
 - [ ] Adjust auto-shutdown to fit each experiment window. Keep automatic progress saving enabled.

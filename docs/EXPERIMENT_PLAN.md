@@ -2,6 +2,8 @@
 
 Status: proposed design, recorded October 3, 2026. This document describes the intended implementation; the Python modules, configurations, backup process, and resume behavior are not yet implemented. Sample counts remain subject to pilot timing.
 
+Owner decisions, October 17, 2026: retain the original research question and goals; use the neutral prompt heading `Background text:`; assess higher batch sizes during the scientific pilot with a conservative memory margin. No pilot or batch-size benchmark has been started by this update. Earlier runtime-validation records retain their original prompt and batch size.
+
 This plan supports *Quantifying Transformer Confidence and Accuracy Trajectories Under Non-Ideal Conditions* and complements [RESOURCE_DEFINITION.md](RESOURCE_DEFINITION.md).
 
 ## Research question and scope
@@ -99,7 +101,7 @@ These diagnostics require no additional inference. Missing condition or baseline
 | Thinking | Explicitly disabled with `enable_thinking=False` |
 | Precision | BF16 for main study; no quantization |
 | Execution | Evaluation mode, gradient tracking disabled |
-| Initial batch size | One; freeze the tested execution policy after the pilot |
+| Initial batch size | One; cautiously assess larger batches during the pilot with at least 25% observed device-memory headroom; freeze the tested policy before main inference |
 | Attention | Tested memory-efficient implementation, fixed for main runs |
 | Scoring | Direct answer-choice logits; no sampled answer generation |
 | Probability transformation | FP32 choice-logit softmax/log-softmax; no fitted temperature or sampling filters |
@@ -135,6 +137,8 @@ Other required chat-template formatting
 ```
 
 Freeze the exact rendered template after the pilot. The experiment concerns increasing distractor context placed before the question; varying question placement would be a separate experiment.
+
+Use `Background text:` as the heading for the background field, including the empty field at baseline. Do not label it irrelevant or explicitly tell the model to ignore it. This accepted wording replaces the earlier `Irrelevant background:` heading for the planned scientific pilot and main study. Revalidate rendered prompts, exact answer-label tokenization, and all token budgets with the new wording. Preserve the earlier validation harness and records as historical evidence for their original configuration; they do not establish scoring outputs for the revised prompt.
 
 Every input token counts, including instructions, choices, answer prefix, separators, and chat-template tokens.
 
@@ -371,6 +375,17 @@ Choose and record the Mac backup directory when implementing the transfer proces
 Estimate runtime separately at each context length, including model loading and operational overhead. Do not extrapolate 32K timing from short prompts. If the planned workload exceeds the existing provisional GPU allocation, reduce question counts before the main study while preserving the paired sweep and three distractor realizations.
 
 Implementation validation should cover metric calculations on known examples, normalized probability records, exact prompt reconstruction, token-budget enforcement, baseline joins, complete evaluation coverage, and recovery without duplicate successes.
+
+### Conservative batch-size assessment during the pilot
+
+The purpose is to find a stable, useful execution setting, not the largest batch that can narrowly fit. Begin at batch size one, then assess two and four. Consider further increases only if conservative estimates based on measured memory growth indicate substantial remaining room. Do not deliberately trigger out-of-memory errors to identify the limit.
+
+- Start the screening with the 32K condition and representative questions from both benchmarks. Repeat warmed-up forwards to check stable peak memory and timing, then confirm the selected setting at all other context conditions.
+- Use an initial acceptance ceiling of 75% of total device memory in use at the observed peak, retaining at least 25% headroom. Account for PyTorch reservation, driver/context overhead, and other GPU users; tensor allocation alone is insufficient. Record total capacity, device-level usage/free memory, and peak allocated and reserved memory with each candidate. On an approximately 80 GB device, the intended margin is roughly 20 GB; calculate the actual threshold from reported capacity.
+- If the estimated next candidate would violate the ceiling, stop increasing. Prefer the smaller successful batch if memory behavior is uncertain, peak use varies, or throughput gains are small. This policy reduces risk but does not guarantee avoidance of allocation failures.
+- Run candidate benchmarks in separate processes with durable logs so an unexpected failure does not discard earlier measurements. The batch-size assessment and runner support remain to be implemented.
+- Compare saved probabilities and predictions against batch-one scoring for identical inputs. Check padding, attention masks, position handling, and per-example answer positions. Document numerical tolerances and investigate prediction changes rather than assuming bitwise equality.
+- Measure questions per second, not just seconds per batch. Select and record one conservative batch size for the paired sweep where feasible; preserve prompts, question IDs, distractor streams, and metrics. Freeze the policy before main inference, without silently changing it after failures.
 
 ## References
 
