@@ -1,4 +1,4 @@
-"""Offline A100/BF16/context validation, with durable records and a recovery check."""
+"""Offline GPU/BF16/context validation, with durable records and a recovery check."""
 
 import argparse
 import contextlib
@@ -16,7 +16,10 @@ import sys
 import time
 from pathlib import Path
 
-from setup_common import ROOT, configure_paths, now, resource_pins
+try:
+    from .setup_common import ROOT, configure_paths, now, resource_pins
+except ImportError:  # Direct script invocation.
+    from setup_common import ROOT, configure_paths, now, resource_pins
 
 
 def digest(value):
@@ -52,7 +55,8 @@ def source_identity():
     return {str(p.relative_to(ROOT)): file_hash(p) for p in files}
 
 
-def render(tokenizer, row, key, background, verify_labels=True):
+def render(tokenizer, row, key, background, verify_labels=True,
+           heading="Irrelevant background:"):
     if key == "mmlu_pro":
         choices, gold, qid = row["options"], row["answer_index"], row["question_id"]
     else:
@@ -60,7 +64,7 @@ def render(tokenizer, row, key, background, verify_labels=True):
         gold, qid = row["choices"]["label"].index(row["answerKey"]), row["id"]
     labels = [chr(65 + i) for i in range(len(choices))]
     content = ("Answer the multiple-choice question using only its choice letter.\n\n"
-               "Irrelevant background:\n" + background + "\n\nQuestion:\n" +
+               f"{heading}\n" + background + "\n\nQuestion:\n" +
                row["question"] + "\n" +
                "\n".join(f"{label}. {choice}" for label, choice in zip(labels, choices)))
     prompt = tokenizer.apply_chat_template(
@@ -177,8 +181,10 @@ def worker(args, paths):
         if torch.cuda.device_count() != 1:
             raise RuntimeError("Validation requires one GPU")
         properties = torch.cuda.get_device_properties(0)
-        if "A100" not in properties.name or properties.total_memory < 79 * 1024**3:
-            raise RuntimeError("Expected the planned A100 80 GB")
+        if (args.expected_gpu not in properties.name or
+                properties.total_memory < args.minimum_vram_gib * 1024**3):
+            raise RuntimeError(f"Expected {args.expected_gpu} with at least "
+                               f"{args.minimum_vram_gib} GiB usable VRAM; got {properties}")
         if not torch.cuda.is_bf16_supported():
             raise RuntimeError("BF16 is unavailable")
         torch.set_num_threads(min(8, os.cpu_count() or 1))
@@ -367,7 +373,9 @@ def recovery_check(args):
     with (run / "interrupted-process.log").open("w") as log:
         try:
             child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
-                                      "--run-dir", str(run), "--pause-after", "2"],
+                                      "--run-dir", str(run), "--pause-after", "2",
+                                      "--expected-gpu", args.expected_gpu,
+                                      "--minimum-vram-gib", str(args.minimum_vram_gib)],
                                      stdout=log, stderr=subprocess.STDOUT)
             deadline = time.monotonic() + 240
             while not (run / "interruption-ready.json").exists():
@@ -386,7 +394,9 @@ def recovery_check(args):
                 child.kill()
                 child.wait(timeout=30)
     print("Terminated initial process with SIGKILL after two durable records; resuming", flush=True)
-    subprocess.run([sys.executable, str(Path(__file__).resolve()), "--run-dir", str(run), "--resume"], check=True)
+    subprocess.run([sys.executable, str(Path(__file__).resolve()), "--run-dir", str(run), "--resume",
+                    "--expected-gpu", args.expected_gpu,
+                    "--minimum-vram-gib", str(args.minimum_vram_gib)], check=True)
     after = {p.name: file_hash(p) for p in (run / "records").glob("*.json")}
     plan = json.loads((run / "plan.json").read_text())
     if len(after) != len(plan["cases"]) or not all(after.get(k) == v for k, v in before.items()):
@@ -402,13 +412,17 @@ def recovery_check(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run-dir", type=Path, default=ROOT / "artifacts/gpu_validation/a100-initial")
+    parser.add_argument("--run-dir", type=Path)
+    parser.add_argument("--expected-gpu", default="A40")
+    parser.add_argument("--minimum-vram-gib", type=float, default=44)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--resume", action="store_true")
     mode.add_argument("--recovery-check", action="store_true")
     parser.add_argument("--pause-after", type=int, default=0, help=argparse.SUPPRESS)
     args = parser.parse_args()
-    args.run_dir = args.run_dir.resolve()
+    paths = configure_paths()
+    args.run_dir = (args.run_dir or paths["TRANSFORMER_CALIBRATION_ARTIFACTS"] /
+                    "gpu_validation" / f"{args.expected_gpu.lower()}-initial").resolve()
     if args.recovery_check:
         recovery_check(args)
         return

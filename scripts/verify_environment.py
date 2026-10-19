@@ -177,9 +177,10 @@ def main():
         "os": platform.platform(), "architecture": platform.machine(), "cpu_count": os.cpu_count(),
         "meminfo": Path("/proc/meminfo").read_text().splitlines()[:3],
         "paths": {k: str(v) for k, v in paths.items()},
-        "wheel_index": "https://download.pytorch.org/whl/cu118",
+        "wheel_index": os.environ.get("TRANSFORMER_CALIBRATION_TORCH_SOURCE",
+                                      "https://download.pytorch.org/whl/cu118"),
         "offline": args.offline,
-        "limitations": ["CUDA/A100 execution unverified", "32K inference unverified",
+        "limitations": ["Full GPU/context scoring requires a separate validate_gpu.py report",
                         "Independent Mac backup requires transfer and checksum verification"],
         "status": "running",
         "source_sha256": {

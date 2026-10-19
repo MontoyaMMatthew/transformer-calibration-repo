@@ -1,6 +1,13 @@
 # Experiment design and result generation plan
 
-Status: proposed design, recorded October 3, 2026. This document describes the intended implementation; the Python modules, configurations, backup process, and resume behavior are not yet implemented. Sample counts remain subject to pilot timing.
+Status: design recorded October 3, 2026. Sample counts remain subject to pilot timing; the original proposed structure below is retained alongside the implementation update.
+
+Implementation update, October 18: the validation-split pilot runner, CPU analysis,
+atomic per-evaluation records, resume checks, and conservative batch-screening
+tools are implemented. The original structure and JSONL layout below are design
+proposals; the implemented CLI uses `src/`, `config/*.json`, and atomic individual
+JSON records. The scientific pilot, long-context batch screening, main-study
+sampling freeze and independent backup remain pending. See [A40 pilot instructions](RUNPOD_PILOT.md).
 
 Owner decisions, October 17, 2026: retain the original research question and goals; use the neutral prompt heading `Background text:`; assess higher batch sizes during the scientific pilot with a conservative memory margin. No pilot or batch-size benchmark has been started by this update. Earlier runtime-validation records retain their original prompt and batch size.
 

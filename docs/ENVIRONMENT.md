@@ -1,5 +1,11 @@
 # Development and experiment environment
 
+RunPod update, October 18: the persistent project overlay uses Python 3.12.3 /
+PyTorch 2.8.0+cu128. A40 BF16/flash-SDPA validation through 32K and forced-kill
+recovery passed; the scientific pilot is still unstarted. See
+[RUNPOD_PILOT.md](RUNPOD_PILOT.md) for paths, packages, evidence and commands.
+The Azure records below are historical and unchanged.
+
 Created: October 3, 2026. Status: Step 001 CPU setup complete; Step 002 GPU validation complete October 4, 2026. The existing environment passed A100 BF16 scoring across all six context conditions through 32K and forced-interruption recovery. The independent CPU backup is verified; new GPU records are prepared for a separate Mac copy.
 
 The Azure VM is already provisioned. Initial CPU development used `Standard_E8s_v5`; the active VM is now `Standard_NC24ads_A100_v4`. CPU setup is recorded in [Step 001](next_steps/STEP_001.md) and the completed GPU validation in [Step 002](next_steps/STEP_002.md). Experiment behavior is defined in [EXPERIMENT_PLAN.md](EXPERIMENT_PLAN.md); infrastructure details are in [RESOURCE_DEFINITION.md](RESOURCE_DEFINITION.md).

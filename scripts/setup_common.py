@@ -17,12 +17,20 @@ def configure_paths():
         "TRANSFORMER_CALIBRATION_ARTIFACTS": ROOT / "artifacts",
         "MPLCONFIGDIR": ROOT / "cache/matplotlib",
         "PIP_CACHE_DIR": ROOT / "cache/pip",
+        "TMPDIR": ROOT / "cache/tmp",
+        "XDG_CACHE_HOME": ROOT / "cache/xdg",
+        "TORCH_HOME": ROOT / "cache/torch",
+        "TRITON_CACHE_DIR": ROOT / "cache/triton",
+        "CUDA_CACHE_PATH": ROOT / "cache/cuda",
     }
     paths = {}
     for key, default in defaults.items():
         path = Path(os.environ.get(key, str(default)))
         if not path.is_absolute():
             raise ValueError(f"{key} must be an absolute path")
+        persistent = os.environ.get("TRANSFORMER_CALIBRATION_PERSISTENT_ROOT")
+        if persistent and not path.resolve().is_relative_to(Path(persistent).resolve()):
+            raise ValueError(f"{key} must be under persistent root {persistent}")
         path.mkdir(parents=True, exist_ok=True)
         os.environ[key] = str(path)
         paths[key] = path

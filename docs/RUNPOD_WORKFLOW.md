@@ -2,6 +2,11 @@
 
 Decision notes: October 18, 2026, Denver time.
 
+**Implementation update:** the A40 Pod and persistent environment are now available,
+and separate 12-case A40 runtime/recovery validation has passed. The scientific
+pilot remains unstarted. See [the current setup and pilot instructions](RUNPOD_PILOT.md).
+The decision/proposal text below preserves what was known before setup.
+
 This document records the storage decision and proposed Runpod execution workflow discussed after an Azure A100 allocation failure. No Runpod Pod, volume, installation, or GPU validation has been completed by this documentation change. Earlier Azure validation remains historical evidence, not validation of Runpod.
 
 ## Decisions and candidate hardware

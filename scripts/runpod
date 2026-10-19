@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Invoke Python with the persistent project environment from any shell.
+set -euo pipefail
+REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_DIR"
+set -a
+source "$REPO_DIR/.env"
+set +a
+exec "$REPO_DIR/.venv/bin/python" "$@"

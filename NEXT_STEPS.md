@@ -1,5 +1,12 @@
 # Next steps
 
+RunPod update, October 18: the checkout is on `dev`, the A40 environment and
+pinned resources are prepared on `/workspace`, and separate 32K runtime/recovery
+validation passed. The scientific pilot runner, CPU metrics/figures and batch
+screening tools are implemented but the pilot remains unstarted, pending owner
+review and commit. Follow [current A40 pilot instructions](docs/RUNPOD_PILOT.md)
+for this Pod; the Azure completion records below remain historical.
+
 Implement the Azure DSVM workflow defined in [docs/RESOURCE_DEFINITION.md](docs/RESOURCE_DEFINITION.md): develop on a CPU VM, retain the same installation and managed disk, and resize to one A100 for GPU validation and experiments. Thinking mode stays disabled throughout.
 
 Status: the existing DSVM has been deployed. Step 001 CPU environment setup, persistent caches, online/offline inference, dependency recreation, shutdown confirmation, and the independent Mac backup are complete. Azure metadata confirms `Standard_NC24ads_A100_v4` and the same managed disk/image; direct `nvidia-smi` confirms one A100 80 GB and driver 535.230.02. On October 4, 2026, BF16 scoring passed for both validation questions across all six contexts through 32K, SDPA flash attention was verified in all 36 layers, and forced-kill recovery passed. See [Step 002](docs/next_steps/STEP_002.md). No new deployment is required. See [ENVIRONMENT.md](docs/ENVIRONMENT.md) and [STEP_001.md](docs/next_steps/STEP_001.md). The quota observations below are historical September 24 records, not current allocation limits.
