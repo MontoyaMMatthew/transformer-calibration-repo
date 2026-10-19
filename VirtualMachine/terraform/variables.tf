@@ -94,7 +94,7 @@ variable "disk_size_gb" {
 }
 variable "auto_shutdown_time" {
   type    = string
-  default = "2300"
+  default = "0030"
   validation {
     condition     = can(regex("^([01][0-9]|2[0-3]):?[0-5][0-9]$", var.auto_shutdown_time))
     error_message = "Use HHmm or HH:mm in 24-hour format."
