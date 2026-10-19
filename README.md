@@ -2,6 +2,8 @@
 
 Azure infrastructure for Qwen3-4B inference experiments. One Ubuntu Data Science Virtual Machine (DSVM) runs on **E8s_v5 for development** and resizes to **NC24ads_A100_v4 for experiments**, keeping its OS disk, Python environment, model cache, and results.
 
+For the alternative Azure CPU development / Runpod GPU workflow, including the 100 GB network-volume decision and required A40 validation, see [Runpod decisions and setup instructions](docs/RUNPOD_WORKFLOW.md). Runpod deployment and validation are pending.
+
 Defaults: South Central US, 256 GiB Standard SSD LRS, a static public IP, key-only SSH restricted to your address, and daily shutdown at 23:00 Denver time. The pinned image is `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`; Azure's South Central US catalog verified it as x64, Generation 2, with no Marketplace purchase plan on September 24, 2026. Actual CPU/GPU quota, allocation, and GPU runtime compatibility still need verification in your personal subscription.
 
 The DSVM supplies the NVIDIA/CUDA software stack. Create your own project venv for PyTorch, Transformers, and experiment dependencies. There is no separate driver installer or Azure Machine Learning workspace in this configuration.
