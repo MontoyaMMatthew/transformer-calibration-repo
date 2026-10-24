@@ -1,5 +1,13 @@
 # A40 pilot preparation and launch
 
+For the current course workflow, use the [quickstart notebook](../notebooks/pilot_pipeline_walkthrough.ipynb).
+The historical setup below used an A40, 44 GiB minimum VRAM, and 25% headroom.
+Current defaults accept compatible NVIDIA GPU models and require 16.2 GiB usable VRAM
+at startup (the pilot's conservative peak plus 10%). There is no percentage-based
+headroom cutoff during execution. Set `TRANSFORMER_CALIBRATION_PERSISTENT_ROOT`
+explicitly before using the CLI (for example, `export TRANSFORMER_CALIBRATION_PERSISTENT_ROOT=/workspace`).
+Git is optional for extracted source archives.
+
 Prepared October 18, 2026 (Denver). **The scientific pilot and long-context batch
 screening have not started. No changes have been committed.** Review and commit
 the source changes before executing the launch commands below.

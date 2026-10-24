@@ -6,15 +6,17 @@ cd "$REPO_DIR"
 python - <<'PY'
 import sys, torch
 from pathlib import Path
+from scripts.setup_common import persistent_root
 if sys.version_info[:2] != (3, 12) or torch.__version__ != '2.8.0+cu128':
     raise RuntimeError('Requires the recorded Python 3.12 / torch 2.8.0+cu128 RunPod base; validate other templates separately')
-if not Path.cwd().is_relative_to('/workspace'):
-    raise RuntimeError('Repository must be on the /workspace network volume')
+if not Path.cwd().resolve().is_relative_to(persistent_root()):
+    raise RuntimeError('Place the project inside TRANSFORMER_CALIBRATION_PERSISTENT_ROOT')
 PY
 python -m venv --system-site-packages .venv
 mkdir -p cache/tmp artifacts/environment
 python - <<'PY'
 from pathlib import Path
+from scripts.setup_common import persistent_root
 root = Path.cwd()
 p = root / '.env'
 if not p.exists():
@@ -26,7 +28,7 @@ if not p.exists():
         'TMPDIR': root/'cache/tmp', 'XDG_CACHE_HOME': root/'cache/xdg',
         'TORCH_HOME': root/'cache/torch', 'TRITON_CACHE_DIR': root/'cache/triton',
         'CUDA_CACHE_PATH': root/'cache/cuda',
-        'TRANSFORMER_CALIBRATION_PERSISTENT_ROOT': '/workspace',
+        'TRANSFORMER_CALIBRATION_PERSISTENT_ROOT': persistent_root(),
         'TRANSFORMER_CALIBRATION_TORCH_SOURCE': 'RunPod-template-torch-2.8.0+cu128',
         'TOKENIZERS_PARALLELISM': 'false', 'HF_HUB_DISABLE_TELEMETRY': '1',
         'HF_HUB_DISABLE_XET': '1', 'HF_HUB_ENABLE_HF_TRANSFER': '0',

@@ -181,12 +181,12 @@ def worker(args, paths):
         if torch.cuda.device_count() != 1:
             raise RuntimeError("Validation requires one GPU")
         properties = torch.cuda.get_device_properties(0)
-        if (args.expected_gpu not in properties.name or
+        if ((args.expected_gpu and args.expected_gpu not in properties.name) or
                 properties.total_memory < args.minimum_vram_gib * 1024**3):
             raise RuntimeError(f"Expected {args.expected_gpu} with at least "
                                f"{args.minimum_vram_gib} GiB usable VRAM; got {properties}")
-        if not torch.cuda.is_bf16_supported():
-            raise RuntimeError("BF16 is unavailable")
+        if not torch.cuda.is_bf16_supported(including_emulation=False):
+            raise RuntimeError("Native BF16 is unavailable")
         torch.set_num_threads(min(8, os.cpu_count() or 1))
         software = {d.metadata["Name"]: d.version for d in importlib.metadata.distributions()}
         pip_check = command(sys.executable, "-m", "pip", "check")
@@ -374,7 +374,7 @@ def recovery_check(args):
         try:
             child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
                                       "--run-dir", str(run), "--pause-after", "2",
-                                      "--expected-gpu", args.expected_gpu,
+                                      "--expected-gpu", args.expected_gpu or "",
                                       "--minimum-vram-gib", str(args.minimum_vram_gib)],
                                      stdout=log, stderr=subprocess.STDOUT)
             deadline = time.monotonic() + 240
@@ -395,7 +395,7 @@ def recovery_check(args):
                 child.wait(timeout=30)
     print("Terminated initial process with SIGKILL after two durable records; resuming", flush=True)
     subprocess.run([sys.executable, str(Path(__file__).resolve()), "--run-dir", str(run), "--resume",
-                    "--expected-gpu", args.expected_gpu,
+                    "--expected-gpu", args.expected_gpu or "",
                     "--minimum-vram-gib", str(args.minimum_vram_gib)], check=True)
     after = {p.name: file_hash(p) for p in (run / "records").glob("*.json")}
     plan = json.loads((run / "plan.json").read_text())
@@ -413,8 +413,8 @@ def recovery_check(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", type=Path)
-    parser.add_argument("--expected-gpu", default="A40")
-    parser.add_argument("--minimum-vram-gib", type=float, default=44)
+    parser.add_argument("--expected-gpu", default=None, help="Optional GPU name filter")
+    parser.add_argument("--minimum-vram-gib", type=float, default=16.2)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--resume", action="store_true")
     mode.add_argument("--recovery-check", action="store_true")
@@ -422,7 +422,7 @@ def main():
     args = parser.parse_args()
     paths = configure_paths()
     args.run_dir = (args.run_dir or paths["TRANSFORMER_CALIBRATION_ARTIFACTS"] /
-                    "gpu_validation" / f"{args.expected_gpu.lower()}-initial").resolve()
+                    "gpu_validation" / f"{(args.expected_gpu or 'gpu').lower()}-initial").resolve()
     if args.recovery_check:
         recovery_check(args)
         return

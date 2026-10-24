@@ -2,7 +2,7 @@
 
 Azure infrastructure for Qwen3-4B inference experiments. One Ubuntu Data Science Virtual Machine (DSVM) runs on **E8s_v5 for development** and resizes to **NC24ads_A100_v4 for experiments**, keeping its OS disk, Python environment, model cache, and results.
 
-For the alternative Azure CPU development / Runpod GPU workflow, see [Runpod decisions and setup instructions](docs/RUNPOD_WORKFLOW.md). The RunPod A40 environment is now prepared and separately runtime-validated through 32K; the scientific pilot remains unstarted. See [current A40 setup, saved-data coverage, and pilot launch commands](docs/RUNPOD_PILOT.md).
+For the course pilot, see the [quickstart notebook](notebooks/pilot_pipeline_walkthrough.ipynb), including complete RunPod and alternative Linux VM/Colab commands and embedded results. The runner accepts compatible NVIDIA GPUs by capability, requires 16.2 GiB usable VRAM at startup (the pilot's conservative peak plus 10%), and uses an explicitly configured storage root. Extracted source ZIPs do not require Git. For the recorded Azure CPU development / RunPod GPU workflow, see [RunPod decisions](docs/RUNPOD_WORKFLOW.md) and the [historical A40 setup record](docs/RUNPOD_PILOT.md).
 
 Defaults: South Central US, 256 GiB Standard SSD LRS, a static public IP, key-only SSH restricted to your address, and daily shutdown at 23:00 Denver time. The pinned image is `microsoft-dsvm:ubuntu-2204:2204-gen2:25.06.18`; Azure's South Central US catalog verified it as x64, Generation 2, with no Marketplace purchase plan on September 24, 2026. Actual CPU/GPU quota, allocation, and GPU runtime compatibility still need verification in your personal subscription.
 

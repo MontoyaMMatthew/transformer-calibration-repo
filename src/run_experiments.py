@@ -18,7 +18,7 @@ def validate_config(config):
     expected = read(ROOT / "config/pilot.json")
     if set(config) != set(expected):
         raise ValueError("Unsupported or missing pilot configuration keys")
-    mutable = {"sample_counts", "selection_seed", "batch_size", "expected_gpu", "minimum_vram_gib"}
+    mutable = {"sample_counts", "selection_seed", "batch_size", "minimum_vram_gib"}
     for key in set(expected) - mutable:
         if config[key] != expected[key]:
             raise ValueError(f"Unsupported pilot setting: {key}")
@@ -27,7 +27,7 @@ def validate_config(config):
                 "use_cache": False, "quantization": False, "logits_to_keep": 1,
                 "reserved_answer_tokens": 1, "prompt_heading": HEADING,
                 "context_budgets": [0, 2048, 4096, 8192, 16384, 32768],
-                "distractor_seeds": [11, 22, 33], "maximum_memory_fraction": 0.75,
+                "distractor_seeds": [11, 22, 33],
                 "max_attempts": 3}
     if any(config[key] != value for key, value in required.items()):
         raise ValueError("Scientific settings differ from the supported pilot protocol")
@@ -134,8 +134,6 @@ def execute(run, max_new_records=None, pause_after=0, benchmark=None):
                         newly_saved += 1
                         log.info("saved %s (%s/%s)", case["evaluation_id"], len(records), len(plan))
                     print(f"Saved {len(records)}/{len(plan)}; {active[0]['context_budget']} tokens", flush=True)
-                    if any(r["minimum_headroom_fraction"] < 1 - config["maximum_memory_fraction"] for r in results):
-                        raise MemoryError("Observed device headroom below 25%; stopping without changing settings")
                     break
                 except Exception as error:
                     for c in active:

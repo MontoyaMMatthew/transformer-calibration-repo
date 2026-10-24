@@ -3,13 +3,11 @@
 import fcntl
 import importlib.metadata
 import json
-import os
 import platform
-import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 
-from scripts.setup_common import ROOT, configure_paths, now, resource_pins
+from scripts.setup_common import ROOT, configure_paths, git_metadata, now, persistent_root, resource_pins
 from scripts.validate_gpu import digest, file_hash, save
 
 
@@ -18,9 +16,9 @@ def read(path):
 
 
 def persistent_path(path):
-    path = Path(path).resolve()
-    root = os.environ.get("TRANSFORMER_CALIBRATION_PERSISTENT_ROOT", "/workspace")
-    if not path.is_relative_to(Path(root).resolve()):
+    path = Path(path).expanduser().resolve()
+    root = persistent_root()
+    if not path.is_relative_to(root):
         raise ValueError(f"Output must be under persistent root {root}: {path}")
     return path
 
@@ -62,12 +60,9 @@ def save_manifest(run, config, plan, questions, streams, selection, resources):
         target = run / "source" / p.relative_to(ROOT)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(p.read_bytes())
-    git = lambda *args: subprocess.run(["git", "-C", str(ROOT), *args],
-                                      capture_output=True, text=True, check=True).stdout.strip()
     manifest = {
         "schema_version": 1, "created_utc": now(), "purpose": config["purpose"],
-        "run_id": run.name, "run_directory": str(run), "git_revision": git("rev-parse", "HEAD"),
-        "git_status": git("status", "--short"), "environment": environment(),
+        "run_id": run.name, "run_directory": str(run), **git_metadata(), "environment": environment(),
         "input_sha256": {name: file_hash(run / name) for name in inputs},
         "paths": {k: str(v) for k, v in configure_paths().items()},
         "inference_settings": config,

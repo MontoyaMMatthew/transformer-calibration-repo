@@ -6,6 +6,11 @@ import json
 import tarfile
 from pathlib import Path
 
+try:
+    from .setup_common import persistent_root
+except ImportError:
+    from setup_common import persistent_root
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -13,14 +18,17 @@ def main():
                         help="Run, analysis and/or benchmark directories")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    output = args.output.resolve()
-    if not output.is_relative_to("/workspace") or output.exists():
-        raise ValueError("Choose a new archive path under /workspace")
+    output = args.output.expanduser().resolve()
+    root = persistent_root()
+    if not output.is_relative_to(root) or output.exists():
+        raise ValueError(f"Choose a new archive path under {root}")
     output.parent.mkdir(parents=True, exist_ok=True)
     members = {}
     with tarfile.open(output, "w:gz") as archive:
         for directory in args.include:
             directory = directory.resolve()
+            if not directory.is_dir():
+                raise ValueError(f"Included directory does not exist: {directory}")
             if output.is_relative_to(directory):
                 raise ValueError("Archive cannot be inside an included directory")
             for path in sorted(directory.rglob("*")):

@@ -13,11 +13,14 @@ import sys
 import time
 from pathlib import Path
 
-from setup_common import ROOT, configure_paths, now, resource_pins, write_json
+from setup_common import ROOT, configure_paths, git_metadata, now, resource_pins, write_json
 
 
 def command(*args):
-    result = subprocess.run(args, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, check=False)
+    except OSError as error:
+        return {"exit_code": 127, "stdout": "", "stderr": str(error)}
     return {"exit_code": result.returncode, "stdout": result.stdout.strip(),
             "stderr": result.stderr.strip()}
 
@@ -172,8 +175,7 @@ def main():
         "created_utc": now(), "purpose": "development validation; not study results",
         "python": {"executable": sys.executable, "version": sys.version,
                    "isolated_venv": sys.prefix != sys.base_prefix},
-        "git_revision": command("git", "-C", str(ROOT), "rev-parse", "HEAD")["stdout"],
-        "git_status": command("git", "-C", str(ROOT), "status", "--short")["stdout"],
+        **git_metadata(),
         "os": platform.platform(), "architecture": platform.machine(), "cpu_count": os.cpu_count(),
         "meminfo": Path("/proc/meminfo").read_text().splitlines()[:3],
         "paths": {k: str(v) for k, v in paths.items()},

@@ -3,13 +3,38 @@
 import json
 import os
 import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def persistent_root():
+    value = os.environ.get("TRANSFORMER_CALIBRATION_PERSISTENT_ROOT")
+    if not value:
+        raise ValueError("Set TRANSFORMER_CALIBRATION_PERSISTENT_ROOT to an absolute storage path")
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        raise ValueError("TRANSFORMER_CALIBRATION_PERSISTENT_ROOT must be an absolute path")
+    return path.resolve()
+
+
+def git_metadata():
+    """Git is optional for extracted source archives; file hashes remain authoritative."""
+    def git(*args):
+        return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True,
+                              text=True, check=True).stdout.strip()
+    try:
+        if Path(git("rev-parse", "--show-toplevel")).resolve() != ROOT.resolve():
+            return {"git_revision": None, "git_status": None}
+        return {"git_revision": git("rev-parse", "HEAD"), "git_status": git("status", "--short")}
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_revision": None, "git_status": None}
+
+
 def configure_paths():
+    persistent = persistent_root()
     defaults = {
         "HF_HOME": ROOT / "cache/huggingface",
         "HF_HUB_CACHE": ROOT / "cache/huggingface/hub",
@@ -28,8 +53,7 @@ def configure_paths():
         path = Path(os.environ.get(key, str(default)))
         if not path.is_absolute():
             raise ValueError(f"{key} must be an absolute path")
-        persistent = os.environ.get("TRANSFORMER_CALIBRATION_PERSISTENT_ROOT")
-        if persistent and not path.resolve().is_relative_to(Path(persistent).resolve()):
+        if not path.resolve().is_relative_to(persistent):
             raise ValueError(f"{key} must be under persistent root {persistent}")
         path.mkdir(parents=True, exist_ok=True)
         os.environ[key] = str(path)

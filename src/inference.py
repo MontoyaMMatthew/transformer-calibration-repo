@@ -14,10 +14,14 @@ def hardware(config):
     if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
         raise RuntimeError("Exactly one visible CUDA GPU is required")
     p = torch.cuda.get_device_properties(0)
-    if config["expected_gpu"] not in p.name or p.total_memory < config["minimum_vram_gib"] * 1024**3:
-        raise RuntimeError(f"Unexpected GPU: {p}")
-    if not torch.cuda.is_bf16_supported():
-        raise RuntimeError("Hardware BF16 support required")
+    if torch.version.cuda is None or torch.version.hip:
+        raise RuntimeError("An NVIDIA CUDA build of PyTorch is required")
+    if p.total_memory < config["minimum_vram_gib"] * 1024**3:
+        raise RuntimeError(f"At least {config['minimum_vram_gib']} GiB usable VRAM required; got {p}")
+    if not torch.cuda.is_bf16_supported(including_emulation=False):
+        raise RuntimeError("Native hardware BF16 support required")
+    if not torch.backends.cuda.is_flash_attention_available():
+        raise RuntimeError("PyTorch must include the Flash SDPA backend")
     info = subprocess.run(["nvidia-smi", "--query-gpu=name,uuid,driver_version,memory.total",
                            "--format=csv,noheader,nounits"], capture_output=True, text=True, check=True)
     return {"name": p.name, "total_memory_bytes": p.total_memory,
